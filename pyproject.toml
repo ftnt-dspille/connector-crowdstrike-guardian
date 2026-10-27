@@ -1,0 +1,41 @@
+# Config-only project file: the connector itself is a FortiSOAR package (imported
+# on-box from the crowdstrike_guardian/ directory) and is not pip-installable. This
+# file carries the pytest + ruff configuration the CI workflows use.
+
+[project]
+name = "connector-crowdstrike-guardian"
+version = "1.0.0"
+description = "FortiSOAR connector for CrowdStrike Falcon Guardian (AIDR): AI agent inventory, activity, agentic graph, and detections."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Put the repo root on sys.path so `from crowdstrike_guardian import operations` resolves.
+pythonpath = ["."]
+# Live tests hit a real CrowdStrike tenant and are opt-in: `pytest -m live`.
+# The default run stays offline and free.
+addopts = "-m 'not live' -ra"
+markers = [
+    "live: exercises a real CrowdStrike tenant; needs CS_CLIENT_ID/CS_CLIENT_SECRET",
+    "op(name): marks the test that proves one connector operation",
+    "live_op(name): marks the online test that proves one connector operation",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+# The connector ships as a FortiSOAR package and follows that codebase's
+# conventions (single quotes, % formatting, `object` base classes), so lint
+# the tests and scripts and leave the connector package alone.
+include = ["tests/**/*.py", "scripts/**/*.py", "tools/**/*.py"]
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, isort, pyupgrade, bugbear
+select = ["F", "E", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["crowdstrike_guardian"]

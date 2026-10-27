@@ -1,0 +1,1879 @@
+{
+  "name": "crowdstrike_guardian",
+  "label": "CrowdStrike Falcon Guardian",
+  "description": "CrowdStrike Falcon Guardian is CrowdStrike's AI detection and response (AIDR) solution. This connector queries the AI agent inventory (agents, sessions, installations, tools, skills, MCP servers, models), per-invocation activity (executions with model and token counts, tool and skill usage, prompts), the agentic graph (process tree, network and file events), and detections involving AI agent processes, and ingests those detections as FortiSOAR alerts on a schedule. Requires a Falcon API client with the AIDR: READ scope.",
+  "publisher": "Community",
+  "cs_approved": false,
+  "cs_compatible": true,
+  "version": "1.0.0",
+  "category": "Threat Intelligence",
+  "icon_small_name": "small_icon.png",
+  "icon_large_name": "large_icon.png",
+  "vendor_version": "Guardian AIDR API v1",
+  "help_online": "https://developer.crowdstrike.com/api-reference/collections/aidr/",
+  "ingestion_supported": true,
+  "ingestion_modes": [
+    "scheduled"
+  ],
+  "ingestion_preferences": {
+    "modules": [
+      "alerts"
+    ]
+  },
+  "tags": [
+    "CrowdStrike",
+    "AI Security",
+    "AIDR",
+    "Guardian"
+  ],
+  "configuration": {
+    "fields": [
+      {
+        "name": "cloud",
+        "title": "CrowdStrike Cloud",
+        "type": "select",
+        "editable": true,
+        "visible": true,
+        "required": true,
+        "description": "The CrowdStrike cloud your Falcon tenant runs on. Pick Custom to enter a base URL, for example for a government or allow-listed deployment.",
+        "tooltip": "The CrowdStrike cloud your Falcon tenant runs on. Pick Custom to enter a base URL, for example for a government or allow-listed deployment.",
+        "value": "https://api.crowdstrike.com",
+        "options": [
+          {
+            "title": "US-1 (api.crowdstrike.com)",
+            "value": "https://api.crowdstrike.com"
+          },
+          {
+            "title": "US-2 (api.us-2.crowdstrike.com)",
+            "value": "https://api.us-2.crowdstrike.com"
+          },
+          {
+            "title": "EU-1 (api.eu-1.crowdstrike.com)",
+            "value": "https://api.eu-1.crowdstrike.com"
+          },
+          {
+            "title": "Custom (base URL below)",
+            "value": "custom"
+          }
+        ],
+        "onchange": {
+          "custom": [
+            {
+              "name": "base_url",
+              "title": "Base URL",
+              "type": "text",
+              "editable": true,
+              "visible": true,
+              "required": true,
+              "description": "Base URL of the CrowdStrike API for a custom cloud, for example https://api.crowdstrike.com. Include the scheme; no trailing slash needed.",
+              "tooltip": "Base URL of the CrowdStrike API for a custom cloud, for example https://api.crowdstrike.com. Include the scheme; no trailing slash needed.",
+              "placeholder": "https://api.crowdstrike.com"
+            }
+          ]
+        }
+      },
+      {
+        "name": "client_id",
+        "title": "Client ID",
+        "type": "text",
+        "editable": true,
+        "visible": true,
+        "required": true,
+        "description": "Client ID of the Falcon API client. Create it in the Falcon console under Support and resources > API clients and keys, with the AIDR: READ scope.",
+        "tooltip": "Client ID of the Falcon API client. Create it in the Falcon console under Support and resources > API clients and keys, with the AIDR: READ scope.",
+        "placeholder": "API client id"
+      },
+      {
+        "name": "client_secret",
+        "title": "Client Secret",
+        "type": "password",
+        "editable": true,
+        "visible": true,
+        "required": true,
+        "description": "Client Secret of the Falcon API client. Stored encrypted.",
+        "tooltip": "Client Secret of the Falcon API client. Stored encrypted."
+      },
+      {
+        "name": "timeout",
+        "title": "Timeout",
+        "type": "integer",
+        "editable": true,
+        "visible": true,
+        "required": false,
+        "description": "(Optional) Request timeout in seconds. Defaults to 30.",
+        "tooltip": "(Optional) Request timeout in seconds. Defaults to 30.",
+        "value": 30,
+        "minimum": 1,
+        "maximum": 300
+      },
+      {
+        "name": "verify_ssl",
+        "title": "Verify SSL",
+        "type": "checkbox",
+        "editable": true,
+        "visible": true,
+        "required": false,
+        "description": "Whether the SSL certificate of the CrowdStrike API is to be validated. Defaults to true.",
+        "tooltip": "Whether the SSL certificate of the CrowdStrike API is to be validated. Defaults to true.",
+        "value": true
+      }
+    ]
+  },
+  "operations": [
+    {
+      "operation": "list_ai_agents",
+      "title": "List AI Agents",
+      "description": "Lists AI agents from the Guardian AIAgent entity store, filtered by product or hostname and windowed by time_range on LastSeen. Records carry the opaque agent Id (pass it to Get AI Agent), the 32-hex SensorId (the host id that event queries filter on), the AgentIds content hashes, the product (a numeric tag id with a friendly AgentProductName sibling) and the seen timestamps.",
+      "category": "investigation",
+      "annotation": "list_ai_agents",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "hostname",
+          "title": "Hostname",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by the hostname of the device running the agent.",
+          "tooltip": "(Optional) Filter by the hostname of the device running the agent."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_ai_agent",
+      "title": "Get AI Agent",
+      "description": "Gets one AI agent record by its opaque agent Id (the Id value from List AI Agents, not the 32-hex SensorId and not an AgentIds content hash). The record carries SensorId, which the host-scoped follow-up actions (List AI Tool Usage, List AI Executions, List AI Detections) take.",
+      "category": "investigation",
+      "annotation": "get_ai_agent",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "agent_id",
+          "title": "Agent Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The AIAgent Id, the opaque record token from List AI Agents (for example ASCWQseSk3b76g...).",
+          "tooltip": "The AIAgent Id, the opaque record token from List AI Agents (for example ASCWQseSk3b76g...)."
+        }
+      ],
+      "output_schema": {
+        "record": {}
+      }
+    },
+    {
+      "operation": "list_agent_sessions",
+      "title": "List AI Agent Sessions",
+      "description": "Lists AI agent sessions windowed by time_range on LastSeen, optionally by product. The route has no host filter: SensorId and AIAgentIds are never populated on this entity, so sessions cannot be scoped to one agent or host. Each record carries the session record Id, the AgenticSessionId UUID, the models invoked and the working directory.",
+      "category": "investigation",
+      "annotation": "list_agent_sessions",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_agent_sessions",
+      "title": "Get AI Agent Sessions",
+      "description": "Gets AI agent session details by session record ids (the Id values from List AI Agent Sessions; these are AIAgentSession entity keys, not ThreatGraph vertices).",
+      "category": "investigation",
+      "annotation": "get_agent_sessions",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "ids",
+          "title": "Ids",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "One or more record ids, comma separated.",
+          "tooltip": "One or more record ids, comma separated.",
+          "placeholder": "id1, id2"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "list_agent_installations",
+      "title": "List AI Agent Installations",
+      "description": "Lists AI agent installations (AIAgentInstallationView): agent name, product, version, install source, declaration and binary paths, binary SHA256, and the execution and inventory timestamps, optionally filtered by sensor id, product or hostname.",
+      "category": "investigation",
+      "annotation": "list_agent_installations",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "sensor_id",
+          "title": "Sensor Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "hostname",
+          "title": "Hostname",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by hostname.",
+          "tooltip": "(Optional) Filter by hostname."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_agent_installations",
+      "title": "Get AI Agent Installations",
+      "description": "Gets AI agent installation details by installation record ids (the Id values from List AI Agent Installations).",
+      "category": "investigation",
+      "annotation": "get_agent_installations",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "ids",
+          "title": "Ids",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "One or more record ids, comma separated.",
+          "tooltip": "One or more record ids, comma separated.",
+          "placeholder": "id1, id2"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "list_os_users",
+      "title": "List OS Users of AI Agents",
+      "description": "Lists OS users that ran AI agents (AIAgentOSUser), optionally filtered by sensor id, username or AD object SID.",
+      "category": "investigation",
+      "annotation": "list_os_users",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "username",
+          "title": "Username",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by OS username.",
+          "tooltip": "(Optional) Filter by OS username."
+        },
+        {
+          "name": "object_sid",
+          "title": "Object SID",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by the Active Directory security identifier.",
+          "tooltip": "(Optional) Filter by the Active Directory security identifier."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_os_user",
+      "title": "Get OS User of AI Agents",
+      "description": "Gets one OS user record by sensor id + username; the AIAgentOSUser entity is keyed on the pair.",
+      "category": "investigation",
+      "annotation": "get_os_user",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "username",
+          "title": "Username",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The OS username.",
+          "tooltip": "The OS username."
+        }
+      ],
+      "output_schema": {
+        "record": {}
+      }
+    },
+    {
+      "operation": "list_tools",
+      "title": "List AI Tools",
+      "description": "Lists the AI tool inventory (AITool): which tools exist and where they were seen. Rows are flat and host-scoped; the store covers few hosts, so for the invocations a host actually made prefer List AI Tool Usage.",
+      "category": "investigation",
+      "annotation": "list_tools",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "sensor_id",
+          "title": "Sensor Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_tools",
+      "title": "Get AI Tools",
+      "description": "Gets AI tool details by tool record ids (the Id values from List AI Tools).",
+      "category": "investigation",
+      "annotation": "get_tools",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "ids",
+          "title": "Ids",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "One or more record ids, comma separated.",
+          "tooltip": "One or more record ids, comma separated.",
+          "placeholder": "id1, id2"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "list_skills",
+      "title": "List AI Skills",
+      "description": "Lists the fleet-wide inventory of AI skill frontmatters (AISkillFrontmatterView), optionally filtered by a name pattern.",
+      "category": "investigation",
+      "annotation": "list_skills",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "name_filter",
+          "title": "Name Filter",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Substring filter on the skill name.",
+          "tooltip": "(Optional) Substring filter on the skill name."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_skills",
+      "title": "Get AI Skills",
+      "description": "Gets AI skill frontmatter details by record ids (the Id values from List AI Skills).",
+      "category": "investigation",
+      "annotation": "get_skills",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "ids",
+          "title": "Ids",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "One or more record ids, comma separated.",
+          "tooltip": "One or more record ids, comma separated.",
+          "placeholder": "id1, id2"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "list_mcp_server_names",
+      "title": "List MCP Server Names",
+      "description": "Lists MCP server names seen in the environment (MCPServerName). Fleet-wide: no agent or host filter, only time_range on LastSeen.",
+      "category": "investigation",
+      "annotation": "list_mcp_server_names",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "list_model_names",
+      "title": "List AI Model Names",
+      "description": "Lists AI model names (AIModelName) seen in the environment. Fleet-wide: the only server-side filter is time_range. For the model a specific session used, prefer List AI Agent Sessions (modelsInvoked) or List AI Executions (AgenticModel).",
+      "category": "investigation",
+      "annotation": "list_model_names",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "list_executions",
+      "title": "List AI Executions",
+      "description": "Lists AI agent process executions with the model and token counts for each (LogScale AgenticSessionStart; one row per process a session spawned). This is the only action that reports token usage (AgenticInputTokens / AgenticOutputTokens), and the only way to see the sessions on a given host: pass Sensor Id (aid), because the agent-sessions route has no host filter. Defaults to a 2-hour window like the API; widen Time Range for older activity (7d max).",
+      "category": "investigation",
+      "annotation": "list_executions",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AgenticSessionId (UUID).",
+          "tooltip": "(Optional) Filter by AgenticSessionId (UUID)."
+        },
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "2h",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "value": 100,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_execution_detail",
+      "title": "Get AI Execution Detail",
+      "description": "Gets the execution detail for one AI session (AgenticSessionId UUID), optionally narrowed to one context process id.",
+      "category": "investigation",
+      "annotation": "get_execution_detail",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The AgenticSessionId (UUID).",
+          "tooltip": "The AgenticSessionId (UUID)."
+        },
+        {
+          "name": "context_process_id",
+          "title": "Context Process Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Narrow the result to one context process id.",
+          "tooltip": "(Optional) Narrow the result to one context process id."
+        }
+      ],
+      "output_schema": {
+        "record": {}
+      }
+    },
+    {
+      "operation": "list_tool_usage",
+      "title": "List AI Tool Usage",
+      "description": "Lists AI tool invocations (LogScale AgenticToolRequest): tool name, path, command line, query, skill and session, filterable by tool name, sensor id or session. Tool Name is exact and case-sensitive (\"Bash\", not \"bash\"); the event store and the tool catalog can differ in case. Defaults to a 2-hour window like the API; widen Time Range for older activity (7d max).",
+      "category": "investigation",
+      "annotation": "list_tool_usage",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "tool_name",
+          "title": "Tool Name",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by tool name. Exact and case-sensitive, for example Bash, Read, Edit, Grep.",
+          "tooltip": "(Optional) Filter by tool name. Exact and case-sensitive, for example Bash, Read, Edit, Grep."
+        },
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AgenticSessionId (UUID).",
+          "tooltip": "(Optional) Filter by AgenticSessionId (UUID)."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "2h",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "value": 100,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "list_skill_usage",
+      "title": "List AI Skill Usage",
+      "description": "Lists per-invocation AI skill events (LogScale AgenticSkill rows), filterable by skill name, sensor id or session. Defaults to a 2-hour window like the API; widen Time Range for older activity (7d max).",
+      "category": "investigation",
+      "annotation": "list_skill_usage",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "name",
+          "title": "Skill Name",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter skill invocations by skill name (exact match).",
+          "tooltip": "(Optional) Filter skill invocations by skill name (exact match)."
+        },
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AgenticSessionId (UUID).",
+          "tooltip": "(Optional) Filter by AgenticSessionId (UUID)."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "2h",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "value": 100,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "list_prompts",
+      "title": "List AI Prompts",
+      "description": "Lists AI prompt records (LogScale AgenticUserPromptSubmit) within a session or host, including the prompt text and an epoch-millisecond timestamp. Defaults to a 2-hour window like the API; widen Time Range for older prompts (7d max).",
+      "category": "investigation",
+      "annotation": "list_prompts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AgenticSessionId (UUID).",
+          "tooltip": "(Optional) Filter by AgenticSessionId (UUID)."
+        },
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "2h",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 100.",
+          "value": 100,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_session_activity",
+      "title": "Get AI Session Activity",
+      "description": "Gets ThreatGraph activity for one or more AI sessions: the connected tools, models, processes, sub-agents and MCP servers. Accepts AgenticSessionId UUIDs or full vertex keys (aisess:{aid}:{uuid}); the server resolves either.",
+      "category": "investigation",
+      "annotation": "get_session_activity",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "ids",
+          "title": "Session Ids",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "One or more session ids (AgenticSessionId UUIDs or aisess:{aid}:{uuid} vertex keys), comma separated.",
+          "tooltip": "One or more session ids (AgenticSessionId UUIDs or aisess:{aid}:{uuid} vertex keys), comma separated.",
+          "placeholder": "id1, id2"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "get_process_tree",
+      "title": "Get AI Session Process Tree",
+      "description": "Gets the spawned process tree for an AI session, to a depth of 1-3 (default 2).",
+      "category": "investigation",
+      "annotation": "get_process_tree",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The AgenticSessionId UUID or the aisess:{aid}:{uuid} vertex key.",
+          "tooltip": "The AgenticSessionId UUID or the aisess:{aid}:{uuid} vertex key."
+        },
+        {
+          "name": "depth",
+          "title": "Depth",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Process tree depth, 1-3. Defaults to 2.",
+          "tooltip": "(Optional) Process tree depth, 1-3. Defaults to 2.",
+          "value": 2,
+          "minimum": 1,
+          "maximum": 3
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "get_network_events",
+      "title": "Get AI Session Network Events",
+      "description": "Gets outbound network connections from an AI session's processes.",
+      "category": "investigation",
+      "annotation": "get_network_events",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The AgenticSessionId UUID or the aisess:{aid}:{uuid} vertex key.",
+          "tooltip": "The AgenticSessionId UUID or the aisess:{aid}:{uuid} vertex key."
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "get_file_events",
+      "title": "Get AI Session File Events",
+      "description": "Gets file write activity from an AI session's processes.",
+      "category": "investigation",
+      "annotation": "get_file_events",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The AgenticSessionId UUID or the aisess:{aid}:{uuid} vertex key.",
+          "tooltip": "The AgenticSessionId UUID or the aisess:{aid}:{uuid} vertex key."
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "get_classified_file_access",
+      "title": "Get Classified File Access",
+      "description": "Gets FDP classified file access for one process. The process id has the form pid:{aid}:{upid}.",
+      "category": "investigation",
+      "annotation": "get_classified_file_access",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "process_id",
+          "title": "Process Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": true,
+          "description": "The classified-file-access process id, pid:{aid}:{upid}.",
+          "tooltip": "The classified-file-access process id, pid:{aid}:{upid}."
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0
+      }
+    },
+    {
+      "operation": "list_ai_detections",
+      "title": "List AI Detections",
+      "description": "Lists detections involving AI agent processes. The Agent Id parameter takes the 32-hex SENSOR/host id (AIAgent.SensorId, the aid), not the opaque AIAgent.Id; the API parameter name is misleading. Records carry Severity (0-100) and RiskScore (different metrics), the MITRE tactic and technique, the agentic product tag and a deep link into the Falcon console.",
+      "category": "investigation",
+      "annotation": "list_ai_detections",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "agent_id",
+          "title": "Agent Id (sensor)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by the 32-hex sensor id (aid), not the AIAgent.Id.",
+          "tooltip": "(Optional) Filter by the 32-hex sensor id (aid), not the AIAgent.Id."
+        },
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 50.",
+          "value": 50,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_detection_scores",
+      "title": "Get AI Detection Scores",
+      "description": "Gets the Agentic Threat Score: the maximum detection severity per agent id and product. Joining a row onto an agent needs BOTH AgentId (the host sensor id) and AgenticProductTag, because a host usually runs several agents and most rows are unattributed. Capped at 500 groups, no pagination.",
+      "category": "investigation",
+      "annotation": "get_detection_scores",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "agent_id",
+          "title": "Agent Id (sensor)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by the 32-hex sensor id (aid), not the AIAgent.Id.",
+          "tooltip": "(Optional) Filter by the 32-hex sensor id (aid), not the AIAgent.Id."
+        },
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_agent_product_counts",
+      "title": "Get Agent Counts by Product",
+      "description": "Gets agent counts grouped by product (aggregates/agents), for a fleet snapshot. Capped at 500 groups with no pagination; a full 500 means truncated.",
+      "category": "miscellaneous",
+      "annotation": "get_agent_product_counts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of groups to request, up to 500. Defaults to 500.",
+          "tooltip": "(Optional) Maximum number of groups to request, up to 500. Defaults to 500.",
+          "value": 500,
+          "minimum": 1,
+          "maximum": 500
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_session_product_counts",
+      "title": "Get Session Counts by Product",
+      "description": "Gets AI agent session counts grouped by product. Counts arrive as JSON strings from the API and are returned as numbers. Capped at 500 groups.",
+      "category": "miscellaneous",
+      "annotation": "get_session_product_counts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of records to return, 1-500. Defaults to 500.",
+          "tooltip": "(Optional) Maximum number of records to return, 1-500. Defaults to 500.",
+          "value": 500,
+          "minimum": 1,
+          "maximum": 500
+        },
+        {
+          "name": "offset",
+          "title": "Offset",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "tooltip": "(Optional) Index of the first record to return, 0-1000, for paging. The API refuses an offset above 1000; narrow the time range instead of paging deeper.",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 1000
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_tool_name_counts",
+      "title": "Get Tool Counts by Name",
+      "description": "Gets AI tool counts grouped by tool name, optionally scoped to one host.",
+      "category": "miscellaneous",
+      "annotation": "get_tool_name_counts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "sensor_id",
+          "title": "Sensor Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "limit",
+          "title": "Limit",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Maximum number of groups to request, up to 500. Defaults to 500.",
+          "tooltip": "(Optional) Maximum number of groups to request, up to 500. Defaults to 500.",
+          "value": 500,
+          "minimum": 1,
+          "maximum": 500
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_skill_name_counts",
+      "title": "Get Skill Counts by Name",
+      "description": "Gets AI skill usage counts grouped by name, optionally filtered by a name pattern.",
+      "category": "miscellaneous",
+      "annotation": "get_skill_name_counts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "name_filter",
+          "title": "Name Filter",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Substring filter on the skill name.",
+          "tooltip": "(Optional) Substring filter on the skill name."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_tool_usage_counts",
+      "title": "Get Tool Usage Counts",
+      "description": "Gets tool invocation counts by name from LogScale events, scoped by session or host. Defaults to a 2-hour window like the API; widen Time Range for older activity (7d max).",
+      "category": "miscellaneous",
+      "annotation": "get_tool_usage_counts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AgenticSessionId (UUID).",
+          "tooltip": "(Optional) Filter by AgenticSessionId (UUID)."
+        },
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "2h",
+          "placeholder": "e.g. 7d"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_skill_usage_counts",
+      "title": "Get Skill Usage Counts",
+      "description": "Gets skill invocation counts by name from LogScale events, scoped by session or host. Defaults to a 2-hour window like the API; widen Time Range for older activity (7d max).",
+      "category": "miscellaneous",
+      "annotation": "get_skill_usage_counts",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "session_id",
+          "title": "Session Id",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AgenticSessionId (UUID).",
+          "tooltip": "(Optional) Filter by AgenticSessionId (UUID)."
+        },
+        {
+          "name": "aid",
+          "title": "Sensor Id (aid)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine.",
+          "tooltip": "(Optional) The 32-hex sensor id (aid) of the HOST. Many hosts run more than one AI agent, so a host-scoped result covers every agent on that machine."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 2h. LogScale-backed routes scan raw events and accept at most 7d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "2h",
+          "placeholder": "e.g. 7d"
+        }
+      ],
+      "output_schema": {
+        "records": [],
+        "count": 0,
+        "notices": []
+      }
+    },
+    {
+      "operation": "get_fleet_inventory",
+      "title": "Get Fleet Inventory",
+      "description": "Gets a fleet snapshot across five aggregates: AI agents and sessions by product, tools and skills by name, and a detection rollup with the worst Agentic Threat Score. Agents-by-product counts agents; sessions-by-product counts logical AIAgentSession rows, so do not relabel one as the other.",
+      "category": "miscellaneous",
+      "annotation": "get_fleet_inventory",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 7d. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "7d",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "agent_id",
+          "title": "Agent Id (sensor)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Narrow the detection rollup to one host: the 32-hex sensor id (aid).",
+          "tooltip": "(Optional) Narrow the detection rollup to one host: the 32-hex sensor id (aid)."
+        }
+      ],
+      "output_schema": {
+        "time_range": "",
+        "agents_by_product": [],
+        "sessions_by_product": [],
+        "tools_by_name": [],
+        "skills_by_name": [],
+        "detections": {},
+        "notices": []
+      }
+    },
+    {
+      "operation": "list_ai_product_options",
+      "title": "List AI Product Options",
+      "description": "Returns the AI product names seen in the environment, for the AI Product dropdowns.",
+      "category": "miscellaneous",
+      "annotation": "list_ai_product_options",
+      "enabled": true,
+      "visible": false,
+      "parameters": [],
+      "output_schema": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "operation": "ingest_ai_detections",
+      "title": "Ingest AI Detections",
+      "description": "Fetches detections involving AI agent processes and maps them to FortiSOAR alerts. Called by the fetch playbook of the Data Ingestion wizard; time_range defaults to 24h.",
+      "category": "investigation",
+      "annotation": "ingest_ai_detections",
+      "enabled": true,
+      "visible": true,
+      "parameters": [
+        {
+          "name": "product",
+          "title": "AI Product",
+          "type": "select",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "tooltip": "(Optional) Filter by AI product name, for example CLAUDE_CODE or CURSOR. Pick from the dropdown or type a name; spaces and hyphens are normalized to underscores.",
+          "apiOperation": "list_ai_product_options"
+        },
+        {
+          "name": "agent_id",
+          "title": "Agent Id (sensor)",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Filter by the 32-hex sensor id (aid), not the AIAgent.Id.",
+          "tooltip": "(Optional) Filter by the 32-hex sensor id (aid), not the AIAgent.Id."
+        },
+        {
+          "name": "time_range",
+          "title": "Time Range",
+          "type": "text",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 24h. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "tooltip": "(Optional) Lookback window: a number with m, h or d, for example 2h, 24h or 7d. Defaults to 24h. Entity-store routes serve up to 90d. If the API refuses the window, the connector retries narrower and reports it in notices.",
+          "value": "24h",
+          "placeholder": "e.g. 7d"
+        },
+        {
+          "name": "severity_min",
+          "title": "Minimum Severity",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Only detections with Severity at or above this value (0-100). Defaults to 0 (all).",
+          "tooltip": "(Optional) Only detections with Severity at or above this value (0-100). Defaults to 0 (all).",
+          "value": 0,
+          "minimum": 0,
+          "maximum": 100
+        },
+        {
+          "name": "max_records",
+          "title": "Maximum Records",
+          "type": "integer",
+          "editable": true,
+          "visible": true,
+          "required": false,
+          "description": "(Optional) Cap on alerts returned per run, 1-5000. Defaults to 200.",
+          "tooltip": "(Optional) Cap on alerts returned per run, 1-5000. Defaults to 200.",
+          "value": 200,
+          "minimum": 1,
+          "maximum": 5000
+        }
+      ],
+      "output_schema": {
+        "alerts": [],
+        "count": 0,
+        "notices": []
+      }
+    }
+  ]
+}

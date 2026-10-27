@@ -1,0 +1,1790 @@
+{
+  "type": "workflow_collections",
+  "macros": [],
+  "exported_tags": [
+    "crowdstrike_guardian",
+    "CrowdStrike",
+    "dataingestion",
+    "fetch",
+    "create",
+    "ingest"
+  ],
+  "data": [
+    {
+      "@type": "WorkflowCollection",
+      "name": "Sample - CrowdStrike Falcon Guardian - 1.0.0",
+      "description": "Sample playbooks for the \"CrowdStrike Falcon Guardian\" connector. If you are planning to use any of the sample playbooks in your environment, ensure that you clone those playbooks and move them to a different collection, since the sample playbook collection gets deleted during connector upgrade and delete.",
+      "visible": true,
+      "image": null,
+      "uuid": "dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+      "recordTags": [
+        "crowdstrike_guardian",
+        "CrowdStrike",
+        "dataingestion"
+      ],
+      "workflows": [
+        {
+          "@type": "Workflow",
+          "name": "Investigate AI Agent",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [],
+          "description": "Investigate one AI agent: the agent record, recent sessions for its product, and ThreatGraph session activity for those sessions.",
+          "isActive": false,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/404c9b85-0a37-5aa9-a977-f44aaad59da2",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  }
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "404c9b85-0a37-5aa9-a977-f44aaad59da2"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "List AI Agents",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "hostname": "",
+                  "product": "",
+                  "time_range": "7d",
+                  "limit": 50,
+                  "offset": 0
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "list_ai_agents",
+                "operationTitle": "List AI Agents",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "a78e0c53-894f-5b62-9bd6-7cb7aa7ae82c"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Agent Found",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "Found",
+                    "condition": "{{ vars.steps.List_AI_Agents.data.count | default(0) | int > 0 }}",
+                    "step_iri": "/api/3/workflow_steps/d967140f-7c8b-52a0-aaa3-01557cb9ae5f",
+                    "step_name": "Get AI Agent"
+                  },
+                  {
+                    "option": "Not Found",
+                    "default": true,
+                    "step_iri": "/api/3/workflow_steps/5ef63319-62df-55fb-b179-5269f3913c1c",
+                    "step_name": "End"
+                  }
+                ]
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "665ef4fe-bfe4-5cf9-a3dc-a84e58449133"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get AI Agent",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "agent_id": "{{ vars.steps.List_AI_Agents.data.records[0].Id }}"
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "get_ai_agent",
+                "operationTitle": "Get AI Agent",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "510",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "d967140f-7c8b-52a0-aaa3-01557cb9ae5f"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "List AI Agent Sessions",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "product": "{{ vars.steps.Get_AI_Agent.data.record.AgentProductName }}",
+                  "time_range": "7d",
+                  "limit": 50,
+                  "offset": 0
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "list_agent_sessions",
+                "operationTitle": "List AI Agent Sessions",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "640",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "2eb8d090-daf4-5958-be86-be574481c5f4"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Sessions Found",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "Found",
+                    "condition": "{{ vars.steps.List_AI_Agent_Sessions.data.count | default(0) | int > 0 }}",
+                    "step_iri": "/api/3/workflow_steps/de3f5b65-7e41-5cf4-ade8-7bf7614b22af",
+                    "step_name": "Get Session Activity"
+                  },
+                  {
+                    "option": "Not Found",
+                    "default": true,
+                    "step_iri": "/api/3/workflow_steps/5ef63319-62df-55fb-b179-5269f3913c1c",
+                    "step_name": "End"
+                  }
+                ]
+              },
+              "status": null,
+              "top": "770",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "bd9e33a2-9e83-54ec-a58f-7ff6cf7c8eed"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get Session Activity",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "ids": "{{ vars.steps.List_AI_Agent_Sessions.data.records | map(attribute=\"Id\") | join(\",\") }}"
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "get_session_activity",
+                "operationTitle": "Get AI Session Activity",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "900",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "de3f5b65-7e41-5cf4-ade8-7bf7614b22af"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "End",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": [],
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "version": "3.7.2",
+                "name": "Utilities",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "1030",
+              "left": "540",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "5ef63319-62df-55fb-b179-5269f3913c1c"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> List AI Agents",
+              "targetStep": "/api/3/workflow_steps/a78e0c53-894f-5b62-9bd6-7cb7aa7ae82c",
+              "sourceStep": "/api/3/workflow_steps/404c9b85-0a37-5aa9-a977-f44aaad59da2",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "a31eb627-138c-5b25-a646-5d4b0affb0ae"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "List AI Agents -> Agent Found",
+              "targetStep": "/api/3/workflow_steps/665ef4fe-bfe4-5cf9-a3dc-a84e58449133",
+              "sourceStep": "/api/3/workflow_steps/a78e0c53-894f-5b62-9bd6-7cb7aa7ae82c",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "00cfd3fa-a655-5e2a-a3c4-0e09c579e812"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Agent Found -> Get AI Agent",
+              "targetStep": "/api/3/workflow_steps/d967140f-7c8b-52a0-aaa3-01557cb9ae5f",
+              "sourceStep": "/api/3/workflow_steps/665ef4fe-bfe4-5cf9-a3dc-a84e58449133",
+              "label": "Found",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "f8d031ab-2802-5044-b0ba-40b5c61eb09f"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Agent Found -> End",
+              "targetStep": "/api/3/workflow_steps/5ef63319-62df-55fb-b179-5269f3913c1c",
+              "sourceStep": "/api/3/workflow_steps/665ef4fe-bfe4-5cf9-a3dc-a84e58449133",
+              "label": "Not Found",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "37c58bed-df15-5a9b-8c5c-0b072a143cc7"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get AI Agent -> List AI Agent Sessions",
+              "targetStep": "/api/3/workflow_steps/2eb8d090-daf4-5958-be86-be574481c5f4",
+              "sourceStep": "/api/3/workflow_steps/d967140f-7c8b-52a0-aaa3-01557cb9ae5f",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "5e6287f0-9c71-58ed-a9db-79242e1fdd45"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "List AI Agent Sessions -> Sessions Found",
+              "targetStep": "/api/3/workflow_steps/bd9e33a2-9e83-54ec-a58f-7ff6cf7c8eed",
+              "sourceStep": "/api/3/workflow_steps/2eb8d090-daf4-5958-be86-be574481c5f4",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "f6e2dad5-eb1c-5885-89e3-a1f0063e6418"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Sessions Found -> Get Session Activity",
+              "targetStep": "/api/3/workflow_steps/de3f5b65-7e41-5cf4-ade8-7bf7614b22af",
+              "sourceStep": "/api/3/workflow_steps/bd9e33a2-9e83-54ec-a58f-7ff6cf7c8eed",
+              "label": "Found",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "14b47fd6-68a2-5b51-8d82-2762248488f8"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Sessions Found -> End",
+              "targetStep": "/api/3/workflow_steps/5ef63319-62df-55fb-b179-5269f3913c1c",
+              "sourceStep": "/api/3/workflow_steps/bd9e33a2-9e83-54ec-a58f-7ff6cf7c8eed",
+              "label": "Not Found",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "14f4b37f-a6d5-56a3-81a1-561a6f6a4194"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get Session Activity -> End",
+              "targetStep": "/api/3/workflow_steps/5ef63319-62df-55fb-b179-5269f3913c1c",
+              "sourceStep": "/api/3/workflow_steps/de3f5b65-7e41-5cf4-ade8-7bf7614b22af",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "d23eff6c-f685-5c9f-9595-0d30c6bf3479"
+            }
+          ],
+          "groups": [
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Agent Found",
+              "description": "The rest of the chain keys off the first agent the query returns. A\nquiet fleet (nothing seen in the window) ends the run here instead of\nfailing on the required agent id.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "380",
+              "left": "540",
+              "height": "160",
+              "width": "440",
+              "uuid": "4ffb5b71-33f9-508f-ab97-32bf57eccaba",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Get AI Agent",
+              "description": "Wired to the first agent from List AI Agents. get_ai_agent wants the\nopaque AIAgent Id, not the 32-hex sensor id -- clone this playbook and\npin the id to a specific agent for a repeatable investigation.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "560",
+              "left": "540",
+              "height": "182",
+              "width": "440",
+              "uuid": "d13c7da9-ea63-5695-a78f-4bdfba663bbc",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: List AI Agent Sessions",
+              "description": "Scoped to the agent's product, not the agent itself: the session store\nhas no per-agent server-side filter, so the product tag is the\nnarrowest scope the API offers.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "762",
+              "left": "880",
+              "height": "160",
+              "width": "440",
+              "uuid": "0e04b5aa-0287-593a-949c-9dd3fd3ce379",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Get Session Activity",
+              "description": "ThreatGraph activity (tools, models, processes, MCP servers as edges)\nfor every session listed above. get_session_activity accepts session\nUUIDs or full vertex keys and resolves either.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "942",
+              "left": "880",
+              "height": "160",
+              "width": "440",
+              "uuid": "ee50e074-86a8-5f7b-bb10-fd803978798e",
+              "recordTags": []
+            }
+          ],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "8926b951-ce1e-5c67-99a5-4b0294b71994",
+          "owners": [],
+          "isPrivate": false
+        },
+        {
+          "@type": "Workflow",
+          "name": "Investigate AI Detections",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [],
+          "description": "Pull AI-agent detections in the lookback window and the per-agent score rollup beside them.",
+          "isActive": false,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/32f96fb0-f588-5278-bc3a-f45ed2d79262",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  }
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "32f96fb0-f588-5278-bc3a-f45ed2d79262"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "List AI Detections",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "agent_id": "",
+                  "product": "",
+                  "time_range": "7d",
+                  "limit": 50,
+                  "offset": 0
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "list_ai_detections",
+                "operationTitle": "List AI Detections",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "3c56b8fa-a0be-5529-bb5b-03972b7c4c64"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get Detection Scores",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "agent_id": "",
+                  "product": "",
+                  "time_range": "7d"
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "get_detection_scores",
+                "operationTitle": "Get AI Detection Scores",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "ce49383a-56f0-51dc-bf13-53cdb9a66c4a"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "End",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": [],
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "version": "3.7.2",
+                "name": "Utilities",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "510",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "47f3f8ed-1e1e-55fd-a712-ed8650351685"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> List AI Detections",
+              "targetStep": "/api/3/workflow_steps/3c56b8fa-a0be-5529-bb5b-03972b7c4c64",
+              "sourceStep": "/api/3/workflow_steps/32f96fb0-f588-5278-bc3a-f45ed2d79262",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "77d59391-d1a6-5fe4-8d35-7abc8a44021b"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "List AI Detections -> Get Detection Scores",
+              "targetStep": "/api/3/workflow_steps/ce49383a-56f0-51dc-bf13-53cdb9a66c4a",
+              "sourceStep": "/api/3/workflow_steps/3c56b8fa-a0be-5529-bb5b-03972b7c4c64",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "2881de28-49e2-5ded-bc4d-cba982bec038"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get Detection Scores -> End",
+              "targetStep": "/api/3/workflow_steps/47f3f8ed-1e1e-55fd-a712-ed8650351685",
+              "sourceStep": "/api/3/workflow_steps/ce49383a-56f0-51dc-bf13-53cdb9a66c4a",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "6b562d9a-b99a-5daa-b641-28482ea32f6f"
+            }
+          ],
+          "groups": [
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Get Detection Scores",
+              "description": "The per-agent maximum detection score over the same window -- the quick\n\"which hosts are burning\" view next to the raw detections.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "380",
+              "left": "540",
+              "height": "138",
+              "width": "440",
+              "uuid": "aaf5037e-2adf-5507-a18a-6d2aeead2b89",
+              "recordTags": []
+            }
+          ],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "0b903c28-0761-57d6-87e0-0289738efb19",
+          "owners": [],
+          "isPrivate": false
+        },
+        {
+          "@type": "Workflow",
+          "name": "Report Fleet Inventory",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [],
+          "description": "One-call environment summary: agents, sessions, tools and skills grouped by product or name, plus the detection rollup.",
+          "isActive": false,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/f0b7d218-15fa-5b7e-a03b-4972d5f4ab44",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  }
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "f0b7d218-15fa-5b7e-a03b-4972d5f4ab44"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get Fleet Inventory",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "time_range": "7d",
+                  "product": "",
+                  "agent_id": ""
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "get_fleet_inventory",
+                "operationTitle": "Get Fleet Inventory",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "3924b146-5424-5914-84f0-6a25438c3daa"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "End",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": [],
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "version": "3.7.2",
+                "name": "Utilities",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "032ae831-cbb4-56a7-8aac-e9ec23d92543"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> Get Fleet Inventory",
+              "targetStep": "/api/3/workflow_steps/3924b146-5424-5914-84f0-6a25438c3daa",
+              "sourceStep": "/api/3/workflow_steps/f0b7d218-15fa-5b7e-a03b-4972d5f4ab44",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "8bfd2097-3146-542e-8b65-5354404685fc"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get Fleet Inventory -> End",
+              "targetStep": "/api/3/workflow_steps/032ae831-cbb4-56a7-8aac-e9ec23d92543",
+              "sourceStep": "/api/3/workflow_steps/3924b146-5424-5914-84f0-6a25438c3daa",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "24f97bfe-c8b4-5f56-ae3d-fc50dadd5c92"
+            }
+          ],
+          "groups": [],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "d7aaf329-fd77-5a10-8486-58f0b0442127",
+          "owners": [],
+          "isPrivate": false
+        },
+        {
+          "@type": "Workflow",
+          "name": "Report Agent Tool Usage",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [],
+          "description": "Recent AI tool invocations from LogScale and the invocation counts beside them. Tool-usage events only reach back 7 days and default to a 2-hour window.",
+          "isActive": false,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/df6d2f6b-96ed-5de4-83ab-df73c89ad834",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  }
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "df6d2f6b-96ed-5de4-83ab-df73c89ad834"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "List Tool Usage",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "tool_name": "",
+                  "aid": "",
+                  "session_id": "",
+                  "time_range": "2h",
+                  "limit": 100,
+                  "offset": 0
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "list_tool_usage",
+                "operationTitle": "List AI Tool Usage",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "a84b97c4-1736-53f6-920e-d0ba5290d77f"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get Tool Usage Counts",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": {
+                  "session_id": "",
+                  "aid": "",
+                  "time_range": "2h"
+                },
+                "connector": "crowdstrike_guardian",
+                "operation": "get_tool_usage_counts",
+                "operationTitle": "Get Tool Usage Counts",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "bf43abab-c96a-5519-9488-3ade272f6084"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "End",
+              "description": null,
+              "arguments": {
+                "config": "",
+                "params": [],
+                "connector": "cyops_utilities",
+                "operation": "no_op",
+                "operationTitle": "Utils: No Operation",
+                "version": "3.7.2",
+                "name": "Utilities",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "510",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "5cbecbd2-dc76-5335-94bd-8eafcb83b4be"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> List Tool Usage",
+              "targetStep": "/api/3/workflow_steps/a84b97c4-1736-53f6-920e-d0ba5290d77f",
+              "sourceStep": "/api/3/workflow_steps/df6d2f6b-96ed-5de4-83ab-df73c89ad834",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "14809c00-aebe-5e63-954c-131b55edaa11"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "List Tool Usage -> Get Tool Usage Counts",
+              "targetStep": "/api/3/workflow_steps/bf43abab-c96a-5519-9488-3ade272f6084",
+              "sourceStep": "/api/3/workflow_steps/a84b97c4-1736-53f6-920e-d0ba5290d77f",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "e4ccca94-202f-5463-975a-5fd8307692a2"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get Tool Usage Counts -> End",
+              "targetStep": "/api/3/workflow_steps/5cbecbd2-dc76-5335-94bd-8eafcb83b4be",
+              "sourceStep": "/api/3/workflow_steps/bf43abab-c96a-5519-9488-3ade272f6084",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "d3a67f7b-9ad3-50b7-a31b-a8f7a9e47a7d"
+            }
+          ],
+          "groups": [],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "9eccee99-ef79-5474-b162-f318918b86af",
+          "owners": [],
+          "isPrivate": false
+        },
+        {
+          "@type": "Workflow",
+          "name": ">> CrowdStrike Guardian > Init Macros",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [
+            "crowdstrike_guardian",
+            "dataingestion"
+          ],
+          "description": "Creates the Guardian last-pull-time macro if it does not already exist. Called by Fetch during the wizard's environment-setup pass.",
+          "isActive": true,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [
+            "GuardianMacroName",
+            "GuardianMacroValue",
+            "overrideIfNoMatch"
+          ],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/4b68fdf5-ae82-52c8-93ec-d7eb3f300bd8",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  }
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "4b68fdf5-ae82-52c8-93ec-d7eb3f300bd8"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get Guardian Macros",
+              "description": null,
+              "arguments": {
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "config": "",
+                "params": {
+                  "iri": "/api/wf/api/dynamic-variable/?format=json&name={{vars.input.params.GuardianMacroName}}",
+                  "body": "",
+                  "method": "GET"
+                },
+                "version": "3.7.2",
+                "name": "Utilities",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "a4db85bd-e7d8-567f-a1f7-73283c0f3357"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Guardian Macro Exists",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "Not Exist",
+                    "condition": "{{ vars.steps.Get_Guardian_Macros.data['hydra:totalItems'] == 0 }}",
+                    "step_iri": "/api/3/workflow_steps/96a72165-f4c4-50b2-befb-5c378564c93b",
+                    "step_name": "Create Guardian Macro"
+                  },
+                  {
+                    "option": "Exist",
+                    "default": true,
+                    "step_iri": "/api/3/workflow_steps/48f05b94-26d4-5a86-9288-09f39d41156b",
+                    "step_name": "Fetch Macro Current Value"
+                  }
+                ]
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "c93c86c9-b5da-5fb7-9e41-4f1a84ee914f"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Create Guardian Macro",
+              "description": null,
+              "arguments": {
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "config": "",
+                "params": {
+                  "iri": "/api/wf/api/dynamic-variable/?format=json",
+                  "body": "{ 'name': '{{vars.input.params.GuardianMacroName}}', 'value': '{{vars.input.params.GuardianMacroValue}}' }",
+                  "method": "POST"
+                },
+                "version": "3.7.2",
+                "name": "Utilities",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "510",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "96a72165-f4c4-50b2-befb-5c378564c93b"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Fetch Macro Current Value",
+              "description": null,
+              "arguments": {
+                "macroExistingRecord": "{{vars.steps.Get_Guardian_Macros.data['hydra:member'][0]}}"
+              },
+              "status": null,
+              "top": "510",
+              "left": "540",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "48f05b94-26d4-5a86-9288-09f39d41156b"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Update Macro If Required",
+              "description": null,
+              "arguments": {
+                "when": "{{ (vars.input.params.overrideIfNoMatch == true) and (vars.macroExistingRecord.value != vars.input.params.GuardianMacroValue) }}",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "config": "",
+                "params": {
+                  "iri": "/api/wf/api/dynamic-variable/{{ vars.macroExistingRecord.id }}/",
+                  "body": "{ 'name': '{{vars.input.params.GuardianMacroName}}', 'value': '{{vars.input.params.GuardianMacroValue}}' }",
+                  "method": "PUT"
+                },
+                "version": "3.7.2",
+                "name": "Utilities",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "640",
+              "left": "540",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "0e8bcb6e-cb61-5ff9-add9-a899864ba9c9"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> Get Guardian Macros",
+              "targetStep": "/api/3/workflow_steps/a4db85bd-e7d8-567f-a1f7-73283c0f3357",
+              "sourceStep": "/api/3/workflow_steps/4b68fdf5-ae82-52c8-93ec-d7eb3f300bd8",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "e6cd4ce2-190b-55c1-9b63-ce66cf1c35c7"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get Guardian Macros -> Guardian Macro Exists",
+              "targetStep": "/api/3/workflow_steps/c93c86c9-b5da-5fb7-9e41-4f1a84ee914f",
+              "sourceStep": "/api/3/workflow_steps/a4db85bd-e7d8-567f-a1f7-73283c0f3357",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "d0a16a2f-7e83-59a7-a00a-554f76f9e674"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Guardian Macro Exists -> Create Guardian Macro",
+              "targetStep": "/api/3/workflow_steps/96a72165-f4c4-50b2-befb-5c378564c93b",
+              "sourceStep": "/api/3/workflow_steps/c93c86c9-b5da-5fb7-9e41-4f1a84ee914f",
+              "label": "Not Exist",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "623a806c-853f-581f-8c4f-85385c88e847"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Guardian Macro Exists -> Fetch Macro Current Value",
+              "targetStep": "/api/3/workflow_steps/48f05b94-26d4-5a86-9288-09f39d41156b",
+              "sourceStep": "/api/3/workflow_steps/c93c86c9-b5da-5fb7-9e41-4f1a84ee914f",
+              "label": "Exist",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "4becd19a-1243-51db-840b-4211e2c5ab49"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Fetch Macro Current Value -> Update Macro If Required",
+              "targetStep": "/api/3/workflow_steps/0e8bcb6e-cb61-5ff9-add9-a899864ba9c9",
+              "sourceStep": "/api/3/workflow_steps/48f05b94-26d4-5a86-9288-09f39d41156b",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "7e35c2fa-2da7-57f3-bffa-4a8e9ad947a3"
+            }
+          ],
+          "groups": [],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "4ed12417-f124-5d09-abbf-7d8e86ef8c6e",
+          "owners": [],
+          "isPrivate": false
+        },
+        {
+          "@type": "Workflow",
+          "name": "> CrowdStrike Guardian > Fetch",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [
+            "crowdstrike_guardian",
+            "fetch",
+            "dataingestion"
+          ],
+          "description": "Reads the last-pull-time watermark, turns it into a detections lookback window, fetches Guardian detections since then, and maps them to FortiSOAR alert shape.",
+          "isActive": true,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/493e2c15-fb51-5ae1-9ffc-b32ed4b2bbc2",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "step_variables": {
+                  "input": {
+                    "params": []
+                  },
+                  "_configuration_schema": "[{\"title\": \"Cold Start Lookback Hours\", \"required\": true, \"editable\": true, \"visible\": true, \"type\": \"text\", \"name\": \"cold_start_hours\", \"value\": \"24\", \"tooltip\": \"Lookback used on the first run, before a last-pull-time watermark exists, and whenever the watermark is missing. e.g. 24\"}, {\"title\": \"AI Product\", \"required\": false, \"editable\": true, \"visible\": true, \"type\": \"text\", \"name\": \"product\", \"tooltip\": \"(Optional) Only ingest detections for one AI product, for example Claude Code or Cursor. Leave blank for all products.\"}, {\"title\": \"Agent Id (sensor)\", \"required\": false, \"editable\": true, \"visible\": true, \"type\": \"text\", \"name\": \"agent_id\", \"tooltip\": \"(Optional) Only ingest detections seen on one host: the 32-hex sensor id (aid), not the AIAgent.Id.\"}, {\"title\": \"Minimum Severity Score\", \"required\": false, \"editable\": true, \"visible\": true, \"type\": \"text\", \"name\": \"severity_min\", \"value\": \"0\", \"tooltip\": \"(Optional) Drop detections whose Falcon severity score is below this 0-100 threshold. 0 keeps everything.\"}, {\"title\": \"Maximum Records Per Run\", \"required\": false, \"editable\": true, \"visible\": true, \"type\": \"text\", \"name\": \"max_records\", \"value\": \"200\", \"tooltip\": \"Cap on alerts created per run, 1-5000.\"}]"
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/b348f017-9a94-471f-87f8-ce88b6a7ad62",
+              "group": null,
+              "uuid": "493e2c15-fb51-5ae1-9ffc-b32ed4b2bbc2"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Configuration",
+              "description": null,
+              "arguments": {
+                "cold_start_hours": "24",
+                "product": "",
+                "agent_id": "",
+                "severity_min": 0,
+                "max_records": 200,
+                "GuardianMacroName": "GuardianLastPullTime_{{vars['audit_info']['cyops_playbook_iri'].split('/')[-1].replace('-','_')}}"
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "636b41a1-d6c7-5538-b224-066fa94e8535"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Get Macro Value",
+              "description": null,
+              "arguments": {
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "config": "",
+                "params": {
+                  "iri": "/api/wf/api/dynamic-variable/?format=json&name={{vars.GuardianMacroName}}",
+                  "body": "",
+                  "method": "GET"
+                },
+                "version": "3.7.2",
+                "name": "Utilities",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "6e4772d0-0130-557e-8fa8-47167fddf952"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Environment Setup",
+              "description": null,
+              "arguments": {
+                "when": "{{ vars.request.env_setup or not vars.steps.Get_Macro_Value.data[\"hydra:member\"] }}",
+                "apply_async": false,
+                "pass_parent_env": false,
+                "pass_input_record": false,
+                "arguments": {
+                  "GuardianMacroName": "{{vars.GuardianMacroName}}",
+                  "GuardianMacroValue": "0",
+                  "overrideIfNoMatch": "false"
+                },
+                "workflowReference": "/api/3/workflows/4ed12417-f124-5d09-abbf-7d8e86ef8c6e"
+              },
+              "status": null,
+              "top": "510",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+              "group": null,
+              "uuid": "efbc5c32-61ca-59ac-9b43-22ab98d104b7"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Set Time Configuration",
+              "description": null,
+              "arguments": {
+                "curr_timestamp": "{{ arrow.utcnow().format('YYYY-MM-DDTHH:mm:ss') }}Z"
+              },
+              "status": null,
+              "top": "640",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "bdde4042-63a1-5787-b736-9b79162bb919"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Set Fetch Window",
+              "description": null,
+              "arguments": {
+                "fetch_window": "{%- set macro = vars.steps.Get_Macro_Value.data['hydra:member'] -%} {%- if not macro or macro[0].value == '0' or vars.request.env_setup -%} {{ vars.cold_start_hours }}h {%- else -%} {%- set hours = ((arrow.utcnow() - arrow.get(macro[0].value)).total_seconds() / 3600) | round(0, 'ceil') | int -%} {%- if hours < 1 %}1h{% elif hours > 2160 %}2160h{% else %}{{ hours }}h{% endif -%} {%- endif -%}"
+              },
+              "status": null,
+              "top": "770",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "fffb1df8-89a3-5bdd-aa06-9cab37003e06"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Fetch Detections",
+              "description": null,
+              "arguments": {
+                "connector": "crowdstrike_guardian",
+                "operation": "ingest_ai_detections",
+                "operationTitle": "Ingest AI Detections",
+                "config": "",
+                "params": {
+                  "product": "{{vars.product}}",
+                  "agent_id": "{{vars.agent_id}}",
+                  "time_range": "{{vars.fetch_window}}",
+                  "severity_min": "{{vars.severity_min}}",
+                  "max_records": "{{vars.max_records}}"
+                },
+                "mock_result": "{\n  \"data\": {\n    \"alerts\": [\n      {\n        \"name\": \"Sample CrowdStrike Guardian detection\",\n        \"external_id\": \"sample-guardian-detection-0001\",\n        \"alert_state\": \"New\",\n        \"severity\": \"High\",\n        \"category\": \"AI Agent Security\",\n        \"subcategory\": \"Credential Access\",\n        \"alert_type\": \"CrowdStrike Guardian\",\n        \"alert_generation_time\": \"2026-10-01T12:30:00Z\",\n        \"alert_generation_epoch\": 1790000000,\n        \"last_observed_time\": \"2026-10-01T12:35:00Z\",\n        \"last_observed_epoch\": 1790000300,\n        \"source_hostname\": \"workstation-01\",\n        \"source_user\": \"analyst\",\n        \"rule_name\": \"Prompt Injection Attempt\",\n        \"rule_description\": \"Discovery\",\n        \"description\": \"AI agent security detection from CrowdStrike Falcon Guardian.\",\n        \"risk_score\": 78,\n        \"has_agentic_process\": true,\n        \"agentic_product\": \"CLAUDE_CODE\",\n        \"falcon_ui_url\": \"https://falcon.crowdstrike.com\",\n        \"raw_detection\": {}\n      }\n    ],\n    \"count\": 1,\n    \"notices\": []\n  }\n}",
+                "version": "1.0.0",
+                "name": "CrowdStrike Falcon Guardian",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "900",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "b21abc1e-70c3-58cd-b421-d986395ab6a8"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Save Result",
+              "description": null,
+              "arguments": {
+                "data": "{{vars.steps.Fetch_Detections.data}}",
+                "current_time": "{{vars.curr_timestamp}}",
+                "GuardianMacroName": "{{vars.GuardianMacroName}}"
+              },
+              "status": null,
+              "top": "1030",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "194d00db-6eec-5553-b8cc-557a3499528f"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> Configuration",
+              "targetStep": "/api/3/workflow_steps/636b41a1-d6c7-5538-b224-066fa94e8535",
+              "sourceStep": "/api/3/workflow_steps/493e2c15-fb51-5ae1-9ffc-b32ed4b2bbc2",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "d8b53237-072f-51b6-b2f2-5dcb024354d6"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Configuration -> Get Macro Value",
+              "targetStep": "/api/3/workflow_steps/6e4772d0-0130-557e-8fa8-47167fddf952",
+              "sourceStep": "/api/3/workflow_steps/636b41a1-d6c7-5538-b224-066fa94e8535",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "6e15d1f3-f673-5c7b-b822-0e3b592dbfa6"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Get Macro Value -> Environment Setup",
+              "targetStep": "/api/3/workflow_steps/efbc5c32-61ca-59ac-9b43-22ab98d104b7",
+              "sourceStep": "/api/3/workflow_steps/6e4772d0-0130-557e-8fa8-47167fddf952",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "1c051cbb-839f-533f-9794-b00eed6c7095"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Environment Setup -> Set Time Configuration",
+              "targetStep": "/api/3/workflow_steps/bdde4042-63a1-5787-b736-9b79162bb919",
+              "sourceStep": "/api/3/workflow_steps/efbc5c32-61ca-59ac-9b43-22ab98d104b7",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "a96ca95e-68ca-5f62-8925-f70b23948468"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Set Time Configuration -> Set Fetch Window",
+              "targetStep": "/api/3/workflow_steps/fffb1df8-89a3-5bdd-aa06-9cab37003e06",
+              "sourceStep": "/api/3/workflow_steps/bdde4042-63a1-5787-b736-9b79162bb919",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "ddd3ccea-a9e4-5d55-9eaa-365df8409df8"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Set Fetch Window -> Fetch Detections",
+              "targetStep": "/api/3/workflow_steps/b21abc1e-70c3-58cd-b421-d986395ab6a8",
+              "sourceStep": "/api/3/workflow_steps/fffb1df8-89a3-5bdd-aa06-9cab37003e06",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "b7d99c32-a44e-503f-8ad1-ee0f68b889da"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Fetch Detections -> Save Result",
+              "targetStep": "/api/3/workflow_steps/194d00db-6eec-5553-b8cc-557a3499528f",
+              "sourceStep": "/api/3/workflow_steps/b21abc1e-70c3-58cd-b421-d986395ab6a8",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "b4e75397-97c4-5412-b940-2ee1015f9845"
+            }
+          ],
+          "groups": [
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Configuration",
+              "description": "Wizard-editable defaults. `cold_start_hours` is the lookback used the\nfirst time this ingestion runs (macro still '0'); after that the\nwatermark sets the window. The macro name is scoped to this playbook's\nUUID so two ingestion configurations never share a watermark.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "250",
+              "left": "540",
+              "height": "226",
+              "width": "440",
+              "uuid": "fb3a7552-dd4b-5193-82e1-6279e5388d5d",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Environment Setup",
+              "description": "Runs when the watermark macro does not exist yet -- not only on the\nwizard's `vars.request.env_setup` first pass.\n\nKeying solely off env_setup left ingestion permanently broken whenever\nthe macro was missing: `Update Last Alert Pull Time` only *updates*, it\ndoes not create, so every run cold-started at the configured lookback\nand the watermark was never written. A silent failure, because nothing\nerrors.\n\nThis step must therefore come AFTER Get Macro Value, so its absence can\nbe seen. The macro is primed to '0', which Set Fetch Window reads as\n\"cold start\" for this one run.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "510",
+              "left": "540",
+              "height": "360",
+              "width": "440",
+              "uuid": "6700fe75-ba5c-51d9-8920-0afb7e2ed824",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Set Time Configuration",
+              "description": "`curr_timestamp` is captured before the fetch and only written back to\nthe macro after Ingest succeeds, so a failed run re-pulls its window\ninstead of silently skipping it.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "890",
+              "left": "540",
+              "height": "160",
+              "width": "440",
+              "uuid": "96a55fe9-3746-597a-81d8-05a251fa3b87",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Set Fetch Window",
+              "description": "The detections API takes a relative lookback, not a from/to pair, so\nthe watermark becomes a window: cold start uses the wizard's lookback;\nafterwards the window is the hours elapsed since the last pull, rounded\nup and clamped to 1..2160 (2160h = 90d, the detections route's\nceiling). A window narrower than one hour is bumped to 1h so back-to-\nback runs still see the records they could otherwise straddle.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "1070",
+              "left": "540",
+              "height": "314",
+              "width": "440",
+              "uuid": "1d1f0ce2-d9f5-5f09-8a7a-d752ede295cb",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Save Result",
+              "description": "The Fetch -> Ingest contract. Ingest reads every one of these back off\nthe workflow_reference step (\"List Detections\") as\n`vars.steps.List_Detections.<key>`.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "1404",
+              "left": "540",
+              "height": "138",
+              "width": "440",
+              "uuid": "735a8ad7-7564-561c-bca4-bf0de8ac7484",
+              "recordTags": []
+            }
+          ],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "1daf6ce3-5cd9-55d2-94a2-43a98d64bd7d",
+          "owners": [],
+          "isPrivate": false
+        },
+        {
+          "@type": "Workflow",
+          "name": "CrowdStrike Guardian > Ingest",
+          "aliasName": null,
+          "tag": "",
+          "recordTags": [
+            "crowdstrike_guardian",
+            "ingest",
+            "dataingestion",
+            "create"
+          ],
+          "description": "Orchestrator: calls Fetch, then either returns a sample record for the wizard's Data Mapping preview (env_setup mode) or creates the alerts and advances the last-pull-time watermark.",
+          "isActive": true,
+          "debug": false,
+          "singleRecordExecution": false,
+          "remoteExecutableFlag": 0,
+          "parameters": [],
+          "synchronous": false,
+          "lastModifyDate": 1797000000,
+          "collection": "/api/3/workflow_collections/dd0d979d-35f7-5c0a-987b-2e6191ddca58",
+          "versions": [],
+          "triggerStep": "/api/3/workflow_steps/49f36530-93cd-58e3-bca2-5522a5aa4178",
+          "steps": [
+            {
+              "@type": "WorkflowStep",
+              "name": "Start",
+              "description": null,
+              "arguments": {
+                "title": "CrowdStrike Guardian > Ingest",
+                "resources": [
+                  "alerts"
+                ],
+                "route": "339b9736-ad87-5819-ac5c-eaec432a4c23",
+                "inputVariables": [],
+                "step_variables": {
+                  "input": {
+                    "params": [],
+                    "records": "{{vars.input.records}}"
+                  }
+                },
+                "triggerOnSource": true,
+                "triggerOnReplicate": false,
+                "noRecordExecution": true,
+                "singleRecordExecution": false,
+                "__triggerLimit": true,
+                "executeButtonText": "Execute",
+                "showToasterMessage": {
+                  "visible": false,
+                  "messageVisible": true
+                },
+                "displayConditions": {
+                  "alerts": {
+                    "sort": [],
+                    "limit": 30,
+                    "logic": "AND",
+                    "filters": []
+                  }
+                }
+              },
+              "status": null,
+              "top": "120",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+              "group": null,
+              "uuid": "49f36530-93cd-58e3-bca2-5522a5aa4178"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "List Detections",
+              "description": null,
+              "arguments": {
+                "apply_async": false,
+                "pass_parent_env": false,
+                "pass_input_record": false,
+                "workflowReference": "/api/3/workflows/1daf6ce3-5cd9-55d2-94a2-43a98d64bd7d"
+              },
+              "status": null,
+              "top": "250",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/74932bdc-b8b6-4d24-88c4-1a4dfbc524f3",
+              "group": null,
+              "uuid": "60457004-a9b0-5049-a143-355d156ccf2a"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Mapping Preview",
+              "description": null,
+              "arguments": {
+                "conditions": [
+                  {
+                    "option": "Mapping Preview",
+                    "condition": "{{ vars.request.env_setup | default(false) | bool }}",
+                    "step_iri": "/api/3/workflow_steps/e6907778-ff83-5b19-bc02-4ed707db6e61",
+                    "step_name": "Return Sample"
+                  },
+                  {
+                    "option": "Ingest",
+                    "default": true,
+                    "step_iri": "/api/3/workflow_steps/e4875072-54e9-5904-a5f6-f8d5562d73f3",
+                    "step_name": "Configuration"
+                  }
+                ]
+              },
+              "status": null,
+              "top": "380",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/12254cf5-5db7-4b1a-8cb1-3af081924b28",
+              "group": null,
+              "uuid": "bd0e0313-d454-521c-bf3d-f3f264cbabba"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Return Sample",
+              "description": null,
+              "arguments": {
+                "sample": "{% if vars.steps.List_Detections.data.alerts | default([]) | length > 0 %}\n  {{ vars.steps.List_Detections.data.alerts[0] }}\n{% else %}\n  {{ { 'name': 'Sample CrowdStrike Guardian detection', 'external_id': 'sample-guardian-detection-0001', 'alert_state': 'New', 'severity': 'High', 'category': 'AI Agent Security', 'subcategory': 'Credential Access', 'alert_type': 'CrowdStrike Guardian', 'alert_generation_time': '2026-10-01T12:30:00Z', 'alert_generation_epoch': 1790000000, 'last_observed_time': '2026-10-01T12:35:00Z', 'last_observed_epoch': 1790000300, 'source_hostname': 'workstation-01', 'source_user': 'analyst', 'rule_name': 'Prompt Injection Attempt', 'rule_description': 'Discovery', 'description': 'AI agent security detection from CrowdStrike Falcon Guardian.', 'risk_score': 78, 'has_agentic_process': true, 'agentic_product': 'CLAUDE_CODE', 'falcon_ui_url': 'https://falcon.crowdstrike.com', 'raw_detection': {} } }}\n{% endif %}"
+              },
+              "status": null,
+              "top": "510",
+              "left": "200",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "e6907778-ff83-5b19-bc02-4ed707db6e61"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Configuration",
+              "description": null,
+              "arguments": {
+                "incident_source_data": "{{ vars.steps.List_Detections.data.alerts }}",
+                "current_time": "{{ vars.steps.List_Detections.current_time }}",
+                "GuardianMacroName": "{{ vars.steps.List_Detections.GuardianMacroName }}",
+                "alerts_severity_map": "{'Minimal': {{'Severity'| picklist('Minimal')}}, 'Low': {{'Severity'| picklist('Low')}}, 'Medium': {{'Severity'| picklist('Medium')}}, 'High': {{'Severity'| picklist('High')}}, 'Critical': {{'Severity'| picklist('Critical')}}}",
+                "alerts_status_map": "{'New': {{'AlertStatus'| picklist('New')}}, 'Open': {{'AlertStatus'| picklist('Open')}}, 'Closed': {{'AlertStatus'| picklist('Closed')}}}",
+                "alerts_type_map": "{'CrowdStrike Guardian': {{'AlertType'| picklist('Other / Unknown')}}}"
+              },
+              "status": null,
+              "top": "510",
+              "left": "540",
+              "stepType": "/api/3/workflow_step_types/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+              "group": null,
+              "uuid": "e4875072-54e9-5904-a5f6-f8d5562d73f3"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Create Record",
+              "description": null,
+              "arguments": {
+                "operation": "Overwrite",
+                "resource": {
+                  "name": "{{ vars.item.name }}",
+                  "source": "CrowdStrike Falcon Guardian",
+                  "sourceId": "{{ vars.item.external_id }}",
+                  "severity": "{{ vars.item.severity | resolveRange(vars.alerts_severity_map) }}",
+                  "alert_state": "{{ \"AlertState\" | picklist(\"New\") }}",
+                  "status": "{{ vars.item.alert_state | resolveRange(vars.alerts_status_map) }}",
+                  "type": "{{ vars.item.alert_type | resolveRange(vars.alerts_type_map) }}",
+                  "alertDetectionDate": "{{ vars.item.alert_generation_epoch | default(0, true) }}",
+                  "eventTime": "{{ vars.item.last_observed_epoch | default(0, true) }}",
+                  "hostName": "{{ vars.item.source_hostname or \"\" }}",
+                  "userName": "{{ vars.item.source_user or \"\" }}",
+                  "rule": "{{ vars.item.rule_name or \"\" }}",
+                  "description": "{{ vars.item.description }}",
+                  "sourcedata": "{{ vars.item.raw_detection | toJSON }}",
+                  "__replace": "true"
+                },
+                "collection": "/api/3/upsert/alerts",
+                "for_each": {
+                  "item": "{{ vars.incident_source_data }}",
+                  "condition": "",
+                  "__bulk": true,
+                  "batch_size": 100
+                }
+              },
+              "status": null,
+              "top": "640",
+              "left": "540",
+              "stepType": "/api/3/workflow_step_types/2597053c-e718-44b4-8394-4d40fe26d357",
+              "group": null,
+              "uuid": "3b7fefbe-e1af-570b-82f3-dab3696f91ad"
+            },
+            {
+              "@type": "WorkflowStep",
+              "name": "Update Last Alert Pull Time",
+              "description": null,
+              "arguments": {
+                "connector": "cyops_utilities",
+                "operation": "updatemacro",
+                "operationTitle": "FSR: Update Global Variables",
+                "config": "",
+                "params": {
+                  "macro": "{{vars.GuardianMacroName}}",
+                  "value": "{{vars.current_time}}"
+                },
+                "version": "3.7.2",
+                "name": "Utilities",
+                "step_variables": [],
+                "pickFromTenant": false
+              },
+              "status": null,
+              "top": "770",
+              "left": "540",
+              "stepType": "/api/3/workflow_step_types/0bfed618-0316-11e7-93ae-92361f002671",
+              "group": null,
+              "uuid": "16d50896-0cde-524e-ac5f-20cc259ca233"
+            }
+          ],
+          "routes": [
+            {
+              "@type": "WorkflowRoute",
+              "name": "Start -> List Detections",
+              "targetStep": "/api/3/workflow_steps/60457004-a9b0-5049-a143-355d156ccf2a",
+              "sourceStep": "/api/3/workflow_steps/49f36530-93cd-58e3-bca2-5522a5aa4178",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "bd7da225-733f-5148-a5da-aa6606d0ebc8"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "List Detections -> Mapping Preview",
+              "targetStep": "/api/3/workflow_steps/bd0e0313-d454-521c-bf3d-f3f264cbabba",
+              "sourceStep": "/api/3/workflow_steps/60457004-a9b0-5049-a143-355d156ccf2a",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "384449fc-6b3b-515c-8e3f-5cf349a643ad"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Mapping Preview -> Return Sample",
+              "targetStep": "/api/3/workflow_steps/e6907778-ff83-5b19-bc02-4ed707db6e61",
+              "sourceStep": "/api/3/workflow_steps/bd0e0313-d454-521c-bf3d-f3f264cbabba",
+              "label": "Mapping Preview",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "50997dd5-ef42-5195-9398-b3fecf4a5e02"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Mapping Preview -> Configuration",
+              "targetStep": "/api/3/workflow_steps/e4875072-54e9-5904-a5f6-f8d5562d73f3",
+              "sourceStep": "/api/3/workflow_steps/bd0e0313-d454-521c-bf3d-f3f264cbabba",
+              "label": "Ingest",
+              "isExecuted": false,
+              "group": null,
+              "uuid": "a882e80f-5430-579b-b30e-73e561109b3d"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Configuration -> Create Record",
+              "targetStep": "/api/3/workflow_steps/3b7fefbe-e1af-570b-82f3-dab3696f91ad",
+              "sourceStep": "/api/3/workflow_steps/e4875072-54e9-5904-a5f6-f8d5562d73f3",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "9b875d77-5c32-5660-ae5a-21c72910ab0d"
+            },
+            {
+              "@type": "WorkflowRoute",
+              "name": "Create Record -> Update Last Alert Pull Time",
+              "targetStep": "/api/3/workflow_steps/16d50896-0cde-524e-ac5f-20cc259ca233",
+              "sourceStep": "/api/3/workflow_steps/3b7fefbe-e1af-570b-82f3-dab3696f91ad",
+              "label": null,
+              "isExecuted": false,
+              "group": null,
+              "uuid": "85fddae7-3de1-5c4b-8b03-c01e808dca3a"
+            }
+          ],
+          "groups": [
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Mapping Preview",
+              "description": "The Data Ingestion Wizard runs the Ingest playbook with\n`vars.request.env_setup == true` while the analyst designs the field\nmapping in the UI. In that mode we return the first fetched,\nalready-mapped detection so the wizard can render the Data Mapping\npreview with real alert fields -- no alerts are written. `false` (or\nmissing) is the real ingestion path.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "380",
+              "left": "880",
+              "height": "270",
+              "width": "440",
+              "uuid": "d3944357-7a0e-59a9-99dd-500ab91fe7e6",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Return Sample",
+              "description": "The sample for the wizard's Data Mapping preview.\n`vars.steps.List_Detections.data.alerts[0]` is the first mapped\ndetection from the Fetch window; its keys are the alert field names\n`field_mapping.map_detection_to_alert` emits (external_id, name,\nseverity, alert_state, alert_generation_epoch, ...), which the wizard\nmaps onto the alerts module. Falls back to a representative hardcoded\nrecord when the window is empty so the preview still renders.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "670",
+              "left": "880",
+              "height": "336",
+              "width": "440",
+              "uuid": "47327e26-002b-50c6-9b46-fc6b80d8c6ee",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Configuration",
+              "description": "Severity/status/type maps are keyed on the values `field_mapping.py`\nemits and cover every one of them -- an unmapped value would make\n`resolveRange` miss and the alert POST fail with a picklist 400.\n`field_mapping` resolves severity to the five FortiSOAR severity labels\nand alert_state to New/Open/Closed, so the two lists have to be changed\ntogether.\n\nThe type map sends Guardian's fixed alert_type label (\"CrowdStrike\nGuardian\") to the AlertType picklist value \"Other / Unknown\": the label\nis not a member of the stock picklist, and the alert's identity rides\non source, name and description instead.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "1026",
+              "left": "880",
+              "height": "360",
+              "width": "440",
+              "uuid": "4a7f858e-3c9d-56ba-a8b9-fb083a29241b",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Create Record",
+              "description": "`is_upsert` routes this at /api/3/upsert/alerts, keyed on `sourceId`, so a\nre-ingest updates the existing alert. Without it the plain insert path\n409s on the sourceid uniqueness constraint the moment a window overlaps a\nprevious run -- which every incremental pull does.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "1406",
+              "left": "880",
+              "height": "204",
+              "width": "440",
+              "uuid": "26a5b2c8-acae-5312-aba2-84b1383078cb",
+              "recordTags": []
+            },
+            {
+              "@type": "WorkflowGroup",
+              "name": "Note: Update Last Alert Pull Time",
+              "description": "Advances the watermark only after the alerts are written, so a failed\nCreate Record leaves the window to be retried.\n",
+              "type": "note",
+              "isCollapsed": false,
+              "hasTriggerStep": false,
+              "hideInLogs": true,
+              "metadata": [],
+              "reusable": false,
+              "top": "1630",
+              "left": "880",
+              "height": "116",
+              "width": "440",
+              "uuid": "388bf214-a926-5ee1-bde1-0a4572bc5406",
+              "recordTags": []
+            }
+          ],
+          "priority": "/api/3/picklists/9e8d41e4-8ada-4a2c-bd02-07f62c6d0a00",
+          "playbookOrigin": null,
+          "isEditable": true,
+          "uuid": "639feec3-348c-53fa-b486-feb6f074a340",
+          "owners": [],
+          "isPrivate": false
+        }
+      ]
+    }
+  ]
+}

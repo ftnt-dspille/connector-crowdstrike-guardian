@@ -1,0 +1,685 @@
+# CrowdStrike Falcon Guardian connector sample playbooks.
+#
+# The first four cover manual investigation and reporting over the AI-agent
+# fleet (agents, detections, inventory, tool usage). The last three are the
+# Data Ingestion Wizard chain (Init Macros / Fetch / Ingest) -- see the block
+# comment above them.
+#
+# Build with `python crowdstrike_guardian/playbooks/build.py`, never by hand:
+# the compiled JSON carries wizard-contract fields (exported_tags,
+# _configuration_schema, the Ingest trigger's route/resources) that this YAML
+# dialect cannot express.
+#
+# connectors: crowdstrike_guardian (swap the config for your Falcon cloud)
+
+collection: Sample - CrowdStrike Falcon Guardian - 1.0.0
+description: >-
+  Sample playbooks for the "CrowdStrike Falcon Guardian" connector. If you are
+  planning to use any of the sample playbooks in your environment, ensure that
+  you clone those playbooks and move them to a different collection, since the
+  sample playbook collection gets deleted during connector upgrade and delete.
+visible: true
+# The Data Ingestion Wizard discovers a connector's sample collection by
+# filtering `/api/3/workflow_collections` on `recordTags=dataingestion` -- so
+# the ingestion tags must live in the collection's `recordTags` (and each
+# ingestion playbook's `recordTags`), not just in `exported_tags` (which is
+# only the export's top-level metadata and is never queried by the wizard).
+tags:
+  - crowdstrike_guardian
+  - CrowdStrike
+  - dataingestion
+exported_tags:
+  - crowdstrike_guardian
+  - CrowdStrike
+  - dataingestion
+  - fetch
+  - create
+  - ingest
+playbooks:
+
+# ---------------------------------------------------------------------------
+# Investigation (multi-step)
+# ---------------------------------------------------------------------------
+
+- name: Investigate AI Agent
+  description: >-
+    Investigate one AI agent: the agent record, recent sessions for its
+    product, and ThreatGraph session activity for those sessions.
+  is_active: false
+  trigger_step_id: Start
+  steps:
+  - type: start
+    name: Start
+    next: List AI Agents
+  - type: connector
+    name: List AI Agents
+    config: ''
+    params:
+      hostname: ''
+      product: ''
+      time_range: 7d
+      limit: 50
+      offset: 0
+    connector: crowdstrike_guardian
+    operation: list_ai_agents
+    operationTitle: List AI Agents
+    next: Agent Found
+  - type: decision
+    name: Agent Found
+    comment: |
+      The rest of the chain keys off the first agent the query returns. A
+      quiet fleet (nothing seen in the window) ends the run here instead of
+      failing on the required agent id.
+    conditions:
+    - display: Found
+      when: "{{ vars.steps.List_AI_Agents.data.count | default(0) | int > 0 }}"
+      next: Get AI Agent
+    - display: Not Found
+      default: true
+      next: End
+  - type: connector
+    name: Get AI Agent
+    config: ''
+    comment: |
+      Wired to the first agent from List AI Agents. get_ai_agent wants the
+      opaque AIAgent Id, not the 32-hex sensor id -- clone this playbook and
+      pin the id to a specific agent for a repeatable investigation.
+    params:
+      agent_id: '{{ vars.steps.List_AI_Agents.data.records[0].Id }}'
+    connector: crowdstrike_guardian
+    operation: get_ai_agent
+    operationTitle: Get AI Agent
+    next: List AI Agent Sessions
+  - type: connector
+    name: List AI Agent Sessions
+    config: ''
+    comment: |
+      Scoped to the agent's product, not the agent itself: the session store
+      has no per-agent server-side filter, so the product tag is the
+      narrowest scope the API offers.
+    params:
+      product: '{{ vars.steps.Get_AI_Agent.data.record.AgentProductName }}'
+      time_range: 7d
+      limit: 50
+      offset: 0
+    connector: crowdstrike_guardian
+    operation: list_agent_sessions
+    operationTitle: List AI Agent Sessions
+    next: Sessions Found
+  - type: decision
+    name: Sessions Found
+    conditions:
+    - display: Found
+      when: "{{ vars.steps.List_AI_Agent_Sessions.data.count | default(0) | int > 0 }}"
+      next: Get Session Activity
+    - display: Not Found
+      default: true
+      next: End
+  - type: connector
+    name: Get Session Activity
+    config: ''
+    comment: |
+      ThreatGraph activity (tools, models, processes, MCP servers as edges)
+      for every session listed above. get_session_activity accepts session
+      UUIDs or full vertex keys and resolves either.
+    params:
+      ids: '{{ vars.steps.List_AI_Agent_Sessions.data.records | map(attribute="Id") | join(",") }}'
+    connector: crowdstrike_guardian
+    operation: get_session_activity
+    operationTitle: Get AI Session Activity
+    next: End
+  - type: connector
+    name: End
+    config: ''
+    params: []
+    connector: cyops_utilities
+    operation: no_op
+    operationTitle: 'Utils: No Operation'
+
+- name: Investigate AI Detections
+  description: >-
+    Pull AI-agent detections in the lookback window and the per-agent score
+    rollup beside them.
+  is_active: false
+  trigger_step_id: Start
+  steps:
+  - type: start
+    name: Start
+    next: List AI Detections
+  - type: connector
+    name: List AI Detections
+    config: ''
+    params:
+      agent_id: ''
+      product: ''
+      time_range: 7d
+      limit: 50
+      offset: 0
+    connector: crowdstrike_guardian
+    operation: list_ai_detections
+    operationTitle: List AI Detections
+    next: Get Detection Scores
+  - type: connector
+    name: Get Detection Scores
+    config: ''
+    comment: |
+      The per-agent maximum detection score over the same window -- the quick
+      "which hosts are burning" view next to the raw detections.
+    params:
+      agent_id: ''
+      product: ''
+      time_range: 7d
+    connector: crowdstrike_guardian
+    operation: get_detection_scores
+    operationTitle: Get AI Detection Scores
+    next: End
+  - type: connector
+    name: End
+    config: ''
+    params: []
+    connector: cyops_utilities
+    operation: no_op
+    operationTitle: 'Utils: No Operation'
+
+- name: Report Fleet Inventory
+  description: >-
+    One-call environment summary: agents, sessions, tools and skills grouped
+    by product or name, plus the detection rollup.
+  is_active: false
+  trigger_step_id: Start
+  steps:
+  - type: start
+    name: Start
+    next: Get Fleet Inventory
+  - type: connector
+    name: Get Fleet Inventory
+    config: ''
+    params:
+      time_range: 7d
+      product: ''
+      agent_id: ''
+    connector: crowdstrike_guardian
+    operation: get_fleet_inventory
+    operationTitle: Get Fleet Inventory
+    next: End
+  - type: connector
+    name: End
+    config: ''
+    params: []
+    connector: cyops_utilities
+    operation: no_op
+    operationTitle: 'Utils: No Operation'
+
+- name: Report Agent Tool Usage
+  description: >-
+    Recent AI tool invocations from LogScale and the invocation counts beside
+    them. Tool-usage events only reach back 7 days and default to a 2-hour
+    window.
+  is_active: false
+  trigger_step_id: Start
+  steps:
+  - type: start
+    name: Start
+    next: List Tool Usage
+  - type: connector
+    name: List Tool Usage
+    config: ''
+    params:
+      tool_name: ''
+      aid: ''
+      session_id: ''
+      time_range: 2h
+      limit: 100
+      offset: 0
+    connector: crowdstrike_guardian
+    operation: list_tool_usage
+    operationTitle: List AI Tool Usage
+    next: Get Tool Usage Counts
+  - type: connector
+    name: Get Tool Usage Counts
+    config: ''
+    params:
+      session_id: ''
+      aid: ''
+      time_range: 2h
+    connector: crowdstrike_guardian
+    operation: get_tool_usage_counts
+    operationTitle: Get Tool Usage Counts
+    next: End
+  - type: connector
+    name: End
+    config: ''
+    params: []
+    connector: cyops_utilities
+    operation: no_op
+    operationTitle: 'Utils: No Operation'
+
+# ---------------------------------------------------------------------------
+# Data ingestion chain (Init Macros / Fetch / Ingest)
+#
+# Modeled on the shipping FortiSIEM v2 connector's ingestion playbooks, which
+# is the shape the Data Ingestion Wizard expects:
+#
+#   * the wizard discovers these three by their tags -- every one carries
+#     #dataingestion, and Fetch/Ingest additionally carry #fetch / #ingest;
+#   * Fetch's Start step carries `_configuration_schema`, the JSON that
+#     renders the wizard's configuration form;
+#   * Fetch ends in a set_variable ("Save Result") publishing `data` plus the
+#     carry-through vars -- Ingest reads them back off the workflow_reference
+#     step ("List Detections") as `vars.steps.List_Detections.<key>`;
+#   * the incremental-pull watermark lives in a per-playbook dynamic variable
+#     (macro) that Init Macros creates, Fetch reads, and Ingest advances.
+#
+# Unlike FortiSIEM there is no from/to pair to carry: the detections API only
+# takes a relative lookback (`time_range`, hours or days -- minutes are
+# rejected with a 400). The watermark is translated into that window instead:
+# cold start uses the wizard's lookback, and every later run pulls the hours
+# elapsed since the last pull, rounded up. Overlap is safe either way, because
+# Ingest upserts alerts on sourceId.
+# ---------------------------------------------------------------------------
+
+- name: '>> CrowdStrike Guardian > Init Macros'
+  description: >-
+    Creates the Guardian last-pull-time macro if it does not already exist.
+    Called by Fetch during the wizard's environment-setup pass.
+  tags:
+  - crowdstrike_guardian
+  - dataingestion
+  is_active: true
+  parameters:
+  - GuardianMacroName
+  - GuardianMacroValue
+  - overrideIfNoMatch
+  steps:
+  - name: Start
+    type: start
+    next: Get Guardian Macros
+
+  - name: Get Guardian Macros
+    type: connector
+    connector: cyops_utilities
+    operation: make_cyops_request
+    config: ''
+    params:
+      iri: /api/wf/api/dynamic-variable/?format=json&name={{vars.input.params.GuardianMacroName}}
+      body: ''
+      method: GET
+    next: Guardian Macro Exists
+
+  - name: Guardian Macro Exists
+    type: decision
+    conditions:
+    - display: Not Exist
+      when: "{{ vars.steps.Get_Guardian_Macros.data['hydra:totalItems'] == 0 }}"
+      next: Create Guardian Macro
+    - display: Exist
+      default: true
+      next: Fetch Macro Current Value
+
+  - name: Create Guardian Macro
+    type: connector
+    connector: cyops_utilities
+    operation: make_cyops_request
+    config: ''
+    params:
+      iri: /api/wf/api/dynamic-variable/?format=json
+      body: "{ 'name': '{{vars.input.params.GuardianMacroName}}', 'value': '{{vars.input.params.GuardianMacroValue}}' }"
+      method: POST
+
+  - name: Fetch Macro Current Value
+    type: set_variable
+    vars:
+      macroExistingRecord: "{{vars.steps.Get_Guardian_Macros.data['hydra:member'][0]}}"
+    next: Update Macro If Required
+
+  - name: Update Macro If Required
+    type: connector
+    when: "{{ (vars.input.params.overrideIfNoMatch == true) and (vars.macroExistingRecord.value != vars.input.params.GuardianMacroValue) }}"
+    connector: cyops_utilities
+    operation: make_cyops_request
+    config: ''
+    params:
+      iri: /api/wf/api/dynamic-variable/{{ vars.macroExistingRecord.id }}/
+      body: "{ 'name': '{{vars.input.params.GuardianMacroName}}', 'value': '{{vars.input.params.GuardianMacroValue}}' }"
+      method: PUT
+
+- name: '> CrowdStrike Guardian > Fetch'
+  description: >-
+    Reads the last-pull-time watermark, turns it into a detections lookback
+    window, fetches Guardian detections since then, and maps them to
+    FortiSOAR alert shape.
+  tags:
+  - crowdstrike_guardian
+  - fetch
+  - dataingestion
+  is_active: true
+  steps:
+  - name: Start
+    type: start
+    configuration_schema:
+    - title: Cold Start Lookback Hours
+      required: true
+      editable: true
+      visible: true
+      type: text
+      name: cold_start_hours
+      value: '24'
+      tooltip: Lookback used on the first run, before a last-pull-time watermark exists, and whenever the watermark is missing. e.g. 24
+    - title: AI Product
+      required: false
+      editable: true
+      visible: true
+      type: text
+      name: product
+      tooltip: (Optional) Only ingest detections for one AI product, for example Claude Code or Cursor. Leave blank for all products.
+    - title: Agent Id (sensor)
+      required: false
+      editable: true
+      visible: true
+      type: text
+      name: agent_id
+      tooltip: '(Optional) Only ingest detections seen on one host: the 32-hex sensor id (aid), not the AIAgent.Id.'
+    - title: Minimum Severity Score
+      required: false
+      editable: true
+      visible: true
+      type: text
+      name: severity_min
+      value: '0'
+      tooltip: (Optional) Drop detections whose Falcon severity score is below this 0-100 threshold. 0 keeps everything.
+    - title: Maximum Records Per Run
+      required: false
+      editable: true
+      visible: true
+      type: text
+      name: max_records
+      value: '200'
+      tooltip: Cap on alerts created per run, 1-5000.
+    next: Configuration
+
+  - name: Configuration
+    type: set_variable
+    comment: |
+      Wizard-editable defaults. `cold_start_hours` is the lookback used the
+      first time this ingestion runs (macro still '0'); after that the
+      watermark sets the window. The macro name is scoped to this playbook's
+      UUID so two ingestion configurations never share a watermark.
+    vars:
+      cold_start_hours: '24'
+      product: ''
+      agent_id: ''
+      severity_min: 0
+      max_records: 200
+      GuardianMacroName: "GuardianLastPullTime_{{vars['audit_info']['cyops_playbook_iri'].split('/')[-1].replace('-','_')}}"
+    next: Get Macro Value
+
+  - name: Get Macro Value
+    type: connector
+    connector: cyops_utilities
+    operation: make_cyops_request
+    config: ''
+    params:
+      iri: /api/wf/api/dynamic-variable/?format=json&name={{vars.GuardianMacroName}}
+      body: ''
+      method: GET
+    next: Environment Setup
+
+  - name: Environment Setup
+    type: workflow_reference
+    comment: |
+      Runs when the watermark macro does not exist yet -- not only on the
+      wizard's `vars.request.env_setup` first pass.
+
+      Keying solely off env_setup left ingestion permanently broken whenever
+      the macro was missing: `Update Last Alert Pull Time` only *updates*, it
+      does not create, so every run cold-started at the configured lookback
+      and the watermark was never written. A silent failure, because nothing
+      errors.
+
+      This step must therefore come AFTER Get Macro Value, so its absence can
+      be seen. The macro is primed to '0', which Set Fetch Window reads as
+      "cold start" for this one run.
+    when: '{{ vars.request.env_setup or not vars.steps.Get_Macro_Value.data["hydra:member"] }}'
+    target: '>> CrowdStrike Guardian > Init Macros'
+    GuardianMacroName: '{{vars.GuardianMacroName}}'
+    GuardianMacroValue: '0'
+    overrideIfNoMatch: 'false'
+    apply_async: false
+    pass_parent_env: false
+    pass_input_record: false
+    next: Set Time Configuration
+
+  - name: Set Time Configuration
+    type: set_variable
+    comment: |
+      `curr_timestamp` is captured before the fetch and only written back to
+      the macro after Ingest succeeds, so a failed run re-pulls its window
+      instead of silently skipping it.
+    vars:
+      curr_timestamp: "{{ arrow.utcnow().format('YYYY-MM-DDTHH:mm:ss') }}Z"
+    next: Set Fetch Window
+
+  - name: Set Fetch Window
+    type: set_variable
+    comment: |
+      The detections API takes a relative lookback, not a from/to pair, so
+      the watermark becomes a window: cold start uses the wizard's lookback;
+      afterwards the window is the hours elapsed since the last pull, rounded
+      up and clamped to 1..2160 (2160h = 90d, the detections route's
+      ceiling). A window narrower than one hour is bumped to 1h so back-to-
+      back runs still see the records they could otherwise straddle.
+    vars:
+      fetch_window: >-
+        {%- set macro = vars.steps.Get_Macro_Value.data['hydra:member'] -%}
+        {%- if not macro or macro[0].value == '0' or vars.request.env_setup -%}
+        {{ vars.cold_start_hours }}h
+        {%- else -%}
+        {%- set hours = ((arrow.utcnow() - arrow.get(macro[0].value)).total_seconds() / 3600) | round(0, 'ceil') | int -%}
+        {%- if hours < 1 %}1h{% elif hours > 2160 %}2160h{% else %}{{ hours }}h{% endif -%}
+        {%- endif -%}
+    # The step is deliberately NOT named exactly "fetch". prepareFetchSampleConfig
+    # treats a step named "fetch" (case-insensitive) as the operation source and
+    # breaks out of its step scan -- which would render the raw connector params
+    # instead of the Start step's _configuration_schema. Keeping a longer name
+    # lets the scan fall through to Start (schema -> fetchOperation) and
+    # Configuration (defaults -> fetchConfiguration), so the wizard's config
+    # form is the schema.
+    next: Fetch Detections
+
+  - name: Fetch Detections
+    type: connector
+    connector: crowdstrike_guardian
+    operation: ingest_ai_detections
+    operationTitle: Ingest AI Detections
+    config: ''
+    params:
+      product: '{{vars.product}}'
+      agent_id: '{{vars.agent_id}}'
+      time_range: '{{vars.fetch_window}}'
+      severity_min: '{{vars.severity_min}}'
+      max_records: '{{vars.max_records}}'
+    # Same shape `ingest_ai_detections` returns. The top-level `data:` key is
+    # what makes `vars.steps.Fetch_Detections.data...` refs resolve in --mock
+    # runs: without it a mock run returns an empty payload and the run looks
+    # wired when it is not.
+    mock_result:
+      data:
+        alerts:
+        - name: Sample CrowdStrike Guardian detection
+          external_id: sample-guardian-detection-0001
+          alert_state: New
+          severity: High
+          category: AI Agent Security
+          subcategory: Credential Access
+          alert_type: CrowdStrike Guardian
+          alert_generation_time: '2026-10-01T12:30:00Z'
+          alert_generation_epoch: 1790000000
+          last_observed_time: '2026-10-01T12:35:00Z'
+          last_observed_epoch: 1790000300
+          source_hostname: workstation-01
+          source_user: analyst
+          rule_name: Prompt Injection Attempt
+          rule_description: Discovery
+          description: AI agent security detection from CrowdStrike Falcon Guardian.
+          risk_score: 78
+          has_agentic_process: true
+          agentic_product: CLAUDE_CODE
+          falcon_ui_url: https://falcon.crowdstrike.com
+          raw_detection: {}
+        count: 1
+        notices: []
+    next: Save Result
+
+  - name: Save Result
+    type: set_variable
+    comment: |
+      The Fetch -> Ingest contract. Ingest reads every one of these back off
+      the workflow_reference step ("List Detections") as
+      `vars.steps.List_Detections.<key>`.
+    vars:
+      data: '{{vars.steps.Fetch_Detections.data}}'
+      current_time: '{{vars.curr_timestamp}}'
+      GuardianMacroName: '{{vars.GuardianMacroName}}'
+
+- name: CrowdStrike Guardian > Ingest
+  description: >-
+    Orchestrator: calls Fetch, then either returns a sample record for the
+    wizard's Data Mapping preview (env_setup mode) or creates the alerts and
+    advances the last-pull-time watermark.
+  tags:
+  - crowdstrike_guardian
+  - ingest
+  - dataingestion
+  - create
+  is_active: true
+  steps:
+  - name: Start
+    type: start
+    module: alerts
+    button_label: 'CrowdStrike Guardian > Ingest'
+    requires_record: false
+    next: List Detections
+
+  - name: List Detections
+    type: workflow_reference
+    target: '> CrowdStrike Guardian > Fetch'
+    apply_async: false
+    pass_parent_env: false
+    pass_input_record: false
+    next: Mapping Preview
+
+  - name: Mapping Preview
+    type: decision
+    comment: |
+      The Data Ingestion Wizard runs the Ingest playbook with
+      `vars.request.env_setup == true` while the analyst designs the field
+      mapping in the UI. In that mode we return the first fetched,
+      already-mapped detection so the wizard can render the Data Mapping
+      preview with real alert fields -- no alerts are written. `false` (or
+      missing) is the real ingestion path.
+    conditions:
+    - display: Mapping Preview
+      when: '{{ vars.request.env_setup | default(false) | bool }}'
+      next: Return Sample
+    - display: Ingest
+      default: true
+      next: Configuration
+
+  - name: Return Sample
+    type: set_variable
+    comment: |
+      The sample for the wizard's Data Mapping preview.
+      `vars.steps.List_Detections.data.alerts[0]` is the first mapped
+      detection from the Fetch window; its keys are the alert field names
+      `field_mapping.map_detection_to_alert` emits (external_id, name,
+      severity, alert_state, alert_generation_epoch, ...), which the wizard
+      maps onto the alerts module. Falls back to a representative hardcoded
+      record when the window is empty so the preview still renders.
+    vars:
+      sample: >-
+        {% if vars.steps.List_Detections.data.alerts | default([]) | length > 0 %}
+          {{ vars.steps.List_Detections.data.alerts[0] }}
+        {% else %}
+          {{ { 'name': 'Sample CrowdStrike Guardian detection', 'external_id': 'sample-guardian-detection-0001', 'alert_state': 'New', 'severity': 'High', 'category': 'AI Agent Security', 'subcategory': 'Credential Access', 'alert_type': 'CrowdStrike Guardian', 'alert_generation_time': '2026-10-01T12:30:00Z', 'alert_generation_epoch': 1790000000, 'last_observed_time': '2026-10-01T12:35:00Z', 'last_observed_epoch': 1790000300, 'source_hostname': 'workstation-01', 'source_user': 'analyst', 'rule_name': 'Prompt Injection Attempt', 'rule_description': 'Discovery', 'description': 'AI agent security detection from CrowdStrike Falcon Guardian.', 'risk_score': 78, 'has_agentic_process': true, 'agentic_product': 'CLAUDE_CODE', 'falcon_ui_url': 'https://falcon.crowdstrike.com', 'raw_detection': {} } }}
+        {% endif %}
+
+  - name: Configuration
+    type: set_variable
+    comment: |
+      Severity/status/type maps are keyed on the values `field_mapping.py`
+      emits and cover every one of them -- an unmapped value would make
+      `resolveRange` miss and the alert POST fail with a picklist 400.
+      `field_mapping` resolves severity to the five FortiSOAR severity labels
+      and alert_state to New/Open/Closed, so the two lists have to be changed
+      together.
+
+      The type map sends Guardian's fixed alert_type label ("CrowdStrike
+      Guardian") to the AlertType picklist value "Other / Unknown": the label
+      is not a member of the stock picklist, and the alert's identity rides
+      on source, name and description instead.
+    vars:
+      incident_source_data: '{{ vars.steps.List_Detections.data.alerts }}'
+      current_time: '{{ vars.steps.List_Detections.current_time }}'
+      GuardianMacroName: '{{ vars.steps.List_Detections.GuardianMacroName }}'
+      alerts_severity_map: "{'Minimal': {{'Severity'| picklist('Minimal')}}, 'Low': {{'Severity'| picklist('Low')}}, 'Medium': {{'Severity'| picklist('Medium')}}, 'High': {{'Severity'| picklist('High')}}, 'Critical': {{'Severity'| picklist('Critical')}}}"
+      alerts_status_map: "{'New': {{'AlertStatus'| picklist('New')}}, 'Open': {{'AlertStatus'| picklist('Open')}}, 'Closed': {{'AlertStatus'| picklist('Closed')}}}"
+      alerts_type_map: "{'CrowdStrike Guardian': {{'AlertType'| picklist('Other / Unknown')}}}"
+    # The step must be named "Create Record" (not e.g. "Create Alerts"): the
+    # Data Ingestion Wizard's page check (`isStepAvailableInPlaybook`) shows the
+    # Data Mapping page only when the create playbook has a step whose name is
+    # exactly "create record", and it reads `arguments.collection` off that step
+    # to detect the target module.
+    next: Create Record
+
+  - name: Create Record
+    type: create_record
+    module: alerts
+    operation: Overwrite
+    is_upsert: true
+    comment: |
+      `is_upsert` routes this at /api/3/upsert/alerts, keyed on `sourceId`, so a
+      re-ingest updates the existing alert. Without it the plain insert path
+      409s on the sourceid uniqueness constraint the moment a window overlaps a
+      previous run -- which every incremental pull does.
+    for_each:
+      item: '{{ vars.incident_source_data }}'
+      __bulk: true
+      batch_size: 100
+      condition: ''
+    fields:
+      name: '{{ vars.item.name }}'
+      source: CrowdStrike Falcon Guardian
+      sourceId: '{{ vars.item.external_id }}'
+      severity: '{{ vars.item.severity | resolveRange(vars.alerts_severity_map) }}'
+      alert_state: '{{ "AlertState" | picklist("New") }}'
+      status: '{{ vars.item.alert_state | resolveRange(vars.alerts_status_map) }}'
+      type: '{{ vars.item.alert_type | resolveRange(vars.alerts_type_map) }}'
+      # Without these the alert carries only its ingest time, so the grid sorts
+      # and the SLA clocks run on when FortiSOAR happened to poll rather than on
+      # when Falcon saw the activity.
+      alertDetectionDate: '{{ vars.item.alert_generation_epoch | default(0, true) }}'
+      eventTime: '{{ vars.item.last_observed_epoch | default(0, true) }}'
+      hostName: '{{ vars.item.source_hostname or "" }}'
+      userName: '{{ vars.item.source_user or "" }}'
+      rule: '{{ vars.item.rule_name or "" }}'
+      description: '{{ vars.item.description }}'
+      # The raw Falcon detection is kept here as JSON rather than linked into
+      # the Events module -- one self-contained record, no relationship to
+      # maintain. It must stay `| toJSON`: a bare `{{ }}` on already-serialised
+      # JSON is stored as the literal string "Array".
+      sourcedata: '{{ vars.item.raw_detection | toJSON }}'
+      __replace: 'true'
+    next: Update Last Alert Pull Time
+
+  - name: Update Last Alert Pull Time
+    type: connector
+    comment: |
+      Advances the watermark only after the alerts are written, so a failed
+      Create Record leaves the window to be retried.
+    connector: cyops_utilities
+    operation: updatemacro
+    operationTitle: 'FSR: Update Global Variables'
+    config: ''
+    params:
+      macro: '{{vars.GuardianMacroName}}'
+      value: '{{vars.current_time}}'

@@ -1,0 +1,250 @@
+{
+  "agent": {
+    "Id": "ASCWQseSk3b76gQmSYjExample01",
+    "AgentIds": ["b0c4a1e2f3d4b5c6a7d8e9f0a1b2c3d4"],
+    "SensorId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "AgentName": "claude-code",
+    "AgentProduct": "213584428666221",
+    "AgentProductName": "Claude Code",
+    "Hostname": "workstation-01",
+    "SpiffeId": "spiffe://example.org/agent/claude-code",
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z",
+    "LastExecutionTime": "2026-10-27T09:12:00Z",
+    "LastInventoryTime": "2026-10-27T09:00:00Z"
+  },
+  "agent_second": {
+    "Id": "XYascZteRk9QwPlmNzExample2",
+    "AgentIds": ["c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6"],
+    "SensorId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "AgentName": "cursor",
+    "AgentProduct": "213584428666999",
+    "AgentProductName": "Cursor",
+    "Hostname": "workstation-01",
+    "FirstSeen": "2026-10-21T10:00:00Z",
+    "LastSeen": "2026-10-27T08:00:00Z"
+  },
+  "session": {
+    "Id": "aiasess-record-1001",
+    "Product": "213584428666221",
+    "ProductName": "Claude Code",
+    "Name": "claude-code on workstation-01",
+    "FirstSeen": "2026-10-27T08:00:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z",
+    "Cim": {
+      "AIAgentSession": {
+        "sessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+        "modelsInvoked": ["claude-sonnet-4-5", "claude-haiku-4-5"],
+        "workingDirectory": "/home/alice/project",
+        "startTime": "2026-10-27T08:00:05Z",
+        "updatedTime": "2026-10-27T09:29:00Z"
+      }
+    }
+  },
+  "installation": {
+    "Id": "aiainst-record-2001",
+    "SensorId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "Hostname": "workstation-01",
+    "AgentName": "claude-code",
+    "AgentProduct": "213584428666221",
+    "AgentProductName": "Claude Code",
+    "AgentVersion": "1.0.44",
+    "InstallSource": "npm",
+    "AgentDeclarationPath": "/home/alice/.claude/settings.json",
+    "BinaryPath": "/usr/local/bin/claude",
+    "FileSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z",
+    "LastExecutionTime": "2026-10-27T09:12:00Z",
+    "LastInventoryTime": "2026-10-27T09:00:00Z"
+  },
+  "os_user": {
+    "Aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "Username": "alice",
+    "ObjectSid": "S-1-5-21-1004336348-1177238915-682003330-1001",
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z"
+  },
+  "tool": {
+    "Id": "aitool-record-3001",
+    "Name": "Bash",
+    "SensorId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z"
+  },
+  "skill": {
+    "Id": "aiskill-record-4001",
+    "SkillName": "code-review",
+    "SkillDescription": "Reviews a change set for correctness and style.",
+    "SkillDirectoryHash": "f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6",
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z"
+  },
+  "mcp_server": {
+    "Id": "mcpname-record-5001",
+    "Cim": {"MCPServerName": {"serverName": "github-mcp"}},
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z",
+    "LastUsedTime": "2026-10-27T09:20:00Z"
+  },
+  "model_name": {
+    "Id": "modelname-record-6001",
+    "Cim": {"AIModelName": {"modelName": "claude-sonnet-4-5"}},
+    "FirstSeen": "2026-10-20T08:15:00Z",
+    "LastSeen": "2026-10-27T09:30:00Z",
+    "LastUsedTime": "2026-10-27T09:20:00Z"
+  },
+  "execution": {
+    "AgenticSessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+    "AgenticModel": "claude-sonnet-4-5",
+    "AgenticWorkingDirectory": "/home/alice/project",
+    "AgenticInputTokens": 12345,
+    "AgenticOutputTokens": 678,
+    "ContextProcessId": "pid:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:4242",
+    "ProcessTags": ["213584428666221"],
+    "aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "timestamp": 1769550720000
+  },
+  "execution_string_counts": {
+    "AgenticSessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+    "AgenticModel": "claude-haiku-4-5",
+    "AgenticInputTokens": "2048",
+    "AgenticOutputTokens": "96",
+    "aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "timestamp": 1769550730000
+  },
+  "tool_usage": {
+    "AgenticSessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+    "AgenticTool": "3",
+    "AgenticToolName": "Bash",
+    "AgenticToolUseId": "toolu_01ExampleUse",
+    "AgenticDescription": "Run the failing test to see the traceback",
+    "CommandLine": "pytest tests/test_ops.py -q",
+    "aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "timestamp": 1769550800000
+  },
+  "tool_usage_lowercase": {
+    "AgenticSessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+    "AgenticToolName": "apply_diff",
+    "AgenticPath": "/home/alice/project/src/app.py",
+    "aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "timestamp": 1769550900000
+  },
+  "skill_usage": {
+    "AgenticSessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+    "AgenticSkill": "code-review",
+    "AgenticToolUseId": "toolu_01ExampleSkill",
+    "aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "timestamp": 1769551000000
+  },
+  "prompt": {
+    "AgenticPrompt": "Fix the failing import in tests and re-run the suite",
+    "AgenticSessionId": "eb5ca156-1128-44ab-b933-3154a36e8a54",
+    "aid": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "ProcessTags": ["213584428666221"],
+    "timestamp": "1769551100000"
+  },
+  "detection": {
+    "CompositeId": "real:advisor:r3dEexample0Composite0Id:abc123",
+    "AgentId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "Name": "AI agent executed an obfuscated command",
+    "Product": "213584428666221",
+    "Severity": 80,
+    "SeverityName": "HIGH",
+    "RiskScore": 65,
+    "Status": "new",
+    "Tactic": "Execution",
+    "Technique": "Command and Scripting Interpreter",
+    "AssignedToName": null,
+    "Sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "DataDomains": ["Endpoint"],
+    "SourceProducts": ["Falcon Agent"],
+    "SourceHosts": ["workstation-01"],
+    "UserNames": ["alice"],
+    "HasAgenticProcess": true,
+    "AgenticProductTag": "213584428666221",
+    "AgenticProductTagName": "Claude Code",
+    "CreatedTimestamp": "2026-10-27T09:31:00Z",
+    "Timestamp": "2026-10-27T09:30:00Z"
+  },
+  "detection_unattributed": {
+    "CompositeId": "real:advisor:r3dEexample1Composite1Id:def456",
+    "AgentId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+    "Name": "Suspicious PowerShell spawn from AI session",
+    "Severity": 95,
+    "SeverityName": "CRITICAL",
+    "RiskScore": 90,
+    "Status": "in_progress",
+    "Tactic": "Execution",
+    "DataDomains": ["Endpoint"],
+    "HasAgenticProcess": true,
+    "AgenticProductTag": null,
+    "AgenticProductTagName": null,
+    "CreatedTimestamp": "2026-10-27T09:40:00Z",
+    "Timestamp": "2026-10-27T09:35:00Z"
+  },
+  "aggregate_agents": [
+    {"AgentProduct": "213584428666221", "AgentProductName": "Claude Code", "count": "3"},
+    {"AgentProduct": 213584428666999, "AgentProductName": "Cursor", "count": 2},
+    {"AgentProduct": 0, "count": "1"}
+  ],
+  "aggregate_sessions": [
+    {"Product": "213584428666221", "ProductName": "Claude Code", "count": "7"},
+    {"Product": "213584428666999", "ProductName": "Cursor", "count": "4"}
+  ],
+  "aggregate_tools": [
+    {"Name": "Bash", "count": 42},
+    {"Name": "Read", "count": 31}
+  ],
+  "aggregate_skills": [
+    {"SkillName": "code-review", "count": 5}
+  ],
+  "aggregate_tool_usage": [
+    {"Name": "Bash", "count": 17},
+    {"Name": "Read", "count": 9}
+  ],
+  "aggregate_skill_usage": [
+    {"Name": "code-review", "count": 3}
+  ],
+  "aggregate_detections": [
+    {"AgentId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6", "AgenticProductTag": "213584428666221",
+     "AgenticProductTagName": "Claude Code", "maxDetectionScore": "80"},
+    {"AgentId": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6", "AgenticProductTag": 0, "maxDetectionScore": 95}
+  ],
+  "graph_session_activity": {
+    "vertices": [
+      {"id": "aisess:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:eb5ca156-1128-44ab-b933-3154a36e8a54",
+       "type": "AISession", "name": "claude-code on workstation-01"},
+      {"id": "aitool:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:f1e2d3", "type": "AITool", "name": "Bash"}
+    ],
+    "edges": [
+      {"source": "aisess:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:eb5ca156-1128-44ab-b933-3154a36e8a54",
+       "target": "aitool:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:f1e2d3", "type": "UsedTool"}
+    ]
+  },
+  "graph_process_tree": {
+    "root": {"context_process_id": "pid:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:4242",
+             "name": "claude", "children": [
+               {"context_process_id": "pid:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:4243",
+                "name": "pytest", "children": []}
+             ]}
+  },
+  "graph_network_events": {
+    "events": [
+      {"domain_name": "api.anthropic.com", "remote_ip": "203.0.113.10", "port": 443,
+       "context_process_id": "pid:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:4242"}
+    ]
+  },
+  "graph_file_events": {
+    "events": [
+      {"path": "/home/alice/project/src/app.py", "action": "WRITE",
+       "context_process_id": "pid:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:4242"}
+    ]
+  },
+  "graph_classified_file_access": {
+    "accesses": [
+      {"path": "/etc/passwd", "classification": "Sensitive", "allowed": false,
+       "context_process_id": "pid:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6:4242"}
+    ]
+  }
+}

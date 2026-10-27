@@ -1,0 +1,75 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs for the same PR/branch.
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No en/em dashes
+        # FortiSOAR loads connector source as latin-1 at runtime, so one of
+        # these raises UnicodeEncodeError on an operation that is otherwise
+        # fine. Lint cannot catch it earlier than this.
+        run: |
+          if git grep -nP '[\x{2013}\x{2014}]' -- . ; then
+            echo "::error::en/em dash found -- use -- and -"
+            exit 1
+          fi
+      - name: Package script is shellcheck-clean
+        run: shellcheck scripts/package.sh
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: check
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: format --check
+
+  manifest:
+    # info.json is the contract FortiSOAR imports; a syntax error here is only
+    # discovered at import time on the appliance, long after the tests pass.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate info.json
+        run: |
+          python3 - <<'PY'
+          import json, re
+          info = json.load(open('crowdstrike_guardian/info.json'))
+          ops = {o['operation'] for o in info['operations']}
+          src = open('crowdstrike_guardian/operations.py').read()
+          registered = set(re.findall(r"^    '([a-z_]+)': \w+,?$", src, re.M))
+          missing = ops - registered
+          assert not missing, f'operations declared in info.json but not registered: {missing}'
+          print(f'info.json OK: {len(ops)} operations, all registered')
+          PY
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Floor is 3.10 (FSR 8.0 runs 3.12); the code stays 3.9-compatible
+        # in syntax so it imports on older 7.6 appliances too.
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install test deps
+        run: pip install pytest requests pydantic
+      - name: Run tests (offline)
+        run: pytest -q

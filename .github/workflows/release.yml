@@ -1,0 +1,75 @@
+name: release
+
+# Tag `v1.0.0` builds the bundle for info.json version 1.0.0 and attaches it to
+# a GitHub release. The tag is the trigger, but info.json stays the source of
+# truth for the version: the checks below refuse a tag that disagrees with it.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Tag must match info.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          info=$(python3 -c "import json;print(json.load(open('crowdstrike_guardian/info.json'))['version'])")
+          if [ "$tag" != "$info" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match info.json version $info"
+            exit 1
+          fi
+          echo "version=$info" >> "$GITHUB_ENV"
+
+      - name: Compiled playbooks must match info.json version
+        # playbooks.json is generated from playbooks.yaml by the fsrpb compiler,
+        # which cannot run here. CI can refuse a release whose committed
+        # playbooks were built for an older version: FortiSOAR deletes and
+        # re-imports the sample collection by name on upgrade.
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          version = json.load(open("crowdstrike_guardian/info.json"))["version"]
+          name = json.load(open("crowdstrike_guardian/playbooks/playbooks.json"))["data"][0]["name"]
+          if not re.search(re.escape(version) + r"$", name):
+              sys.exit("::error::playbooks.json collection %r is not built for %s; "
+                       "re-run python3 crowdstrike_guardian/playbooks/build.py" % (name, version))
+          print("collection %r matches %s" % (name, version))
+          PY
+
+      - name: No en/em dashes
+        run: |
+          if git grep -nP '[\x{2013}\x{2014}]' -- . ; then
+            echo "::error::en/em dash found -- use -- and -"
+            exit 1
+          fi
+
+      - name: Tests (offline)
+        # A real gate: a failing suite blocks the release.
+        run: |
+          pip install pytest requests pydantic
+          python3 -m pytest tests -q
+
+      - name: Generated files are current
+        run: |
+          python3 scripts/gen_docs.py --check
+          python3 scripts/gen_info.py
+          git diff --exit-code crowdstrike_guardian/info.json
+
+      - name: Build bundle
+        run: ./scripts/package.sh
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/crowdstrike_guardian-${{ env.version }}.tgz
+          body_path: crowdstrike_guardian/release_notes.md
